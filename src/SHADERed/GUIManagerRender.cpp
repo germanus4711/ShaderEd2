@@ -16,6 +16,8 @@
 #include "misc/stb_image.h"
 #include "misc/stb_image_resize.h"
 
+#include <iostream>
+
 namespace ed {
 	class CodeEditorUI;
 	void GUIManager::Render()
@@ -151,9 +153,13 @@ namespace ed {
 		int req_format = STBI_rgb_alpha;
 		int width, height, orig_format;
 		unsigned char* data = stbi_load("./data/splash_screen_logo.png", &width, &height, &orig_format, req_format);
-		if (data == nullptr)
-			ed::Logger::Get().Log("Failed to load splash screen icon", true);
-		else {
+		if (data == nullptr) {
+			ed::Logger::Get().Log("Failed to load splash screen logo", true);
+
+			std::cout << "Current working directory: "
+		  << std::filesystem::current_path() << std::endl;
+			std::cout << "Failed to load splash screen icon";
+		} else {
 			glGenTextures(1, &m_splashScreenIcon);
 			glBindTexture(GL_TEXTURE_2D, m_splashScreenIcon);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);

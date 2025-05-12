@@ -246,6 +246,7 @@ namespace ed {
 			glDeleteTextures(1, &texID);
 		};
 
+		// TODO what is that file? vvv
 		// load file dialog bookmarks
 		std::string bookmarksFileLoc = Settings::Instance().ConvertPath("data/filedialog.dat");
 		std::ifstream bookmarksFile(bookmarksFileLoc);
@@ -322,8 +323,8 @@ namespace ed {
 
 		// check for shortcut presses
 		if (e.type == SDL_KEYDOWN) {
-			if (!(m_optionsOpened && static_cast<OptionsUI*>(m_options)->IsListening())) {
-				const bool codeHasFocus = static_cast<CodeEditorUI*>(Get(ViewID::Code))->HasFocus();
+			if (!(m_optionsOpened && dynamic_cast<OptionsUI*>(m_options)->IsListening())) {
+				const bool codeHasFocus = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code))->HasFocus();
 
 				if (!(ImGui::GetIO().WantTextInput && !codeHasFocus)) {
 					KeyboardShortcuts::Instance().Check(e, codeHasFocus);
@@ -362,7 +363,7 @@ namespace ed {
 				else if (std::count(sndExt.begin(), sndExt.end(), ext) > 0)
 					m_data->Objects.CreateAudio(file);
 				else if (std::count(shaderExt.begin(), shaderExt.end(), ext) > 0)
-					((CodeEditorUI*)Get(ed::ViewID::Code))->OpenFile(m_data->Parser.GetProjectPath(file));
+					dynamic_cast<CodeEditorUI*>(Get(ed::ViewID::Code))->OpenFile(m_data->Parser.GetProjectPath(file));
 				else if (ext == "dds") {
 					const auto actualFileLoc = m_data->Parser.GetProjectPath(file);
 
