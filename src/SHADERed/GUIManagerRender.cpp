@@ -7,7 +7,9 @@
 #include "InterfaceManager.h"
 #include "Objects/Logger.h"
 #include "Objects/Settings.h"
+#include "Objects/SystemVariableManager.h"
 #include "UI/CodeEditorUI.h"
+#include "UI/PinnedUI.h"
 #include "UI/PipelineUI.h"
 #include "UI/UIHelper.h"
 #include "imgui/examples/imgui_impl_opengl3.h"
@@ -372,6 +374,162 @@ namespace ed {
 
 				ImGui::End();
 				ImGui::PopStyleColor(2);
+			}
+		}
+	}
+	ShaderVariable::ValueType getTypeFromSPV(SPIRVParser::ValueType valType)
+	{
+		switch (valType) {
+		case SPIRVParser::ValueType::Bool:
+			return ShaderVariable::ValueType::Boolean1;
+		case SPIRVParser::ValueType::Int:
+			return ShaderVariable::ValueType::Integer1;
+		case SPIRVParser::ValueType::Float:
+			return ShaderVariable::ValueType::Float1;
+		default:
+			return ShaderVariable::ValueType::Count;
+		}
+		return ShaderVariable::ValueType::Count;
+	}
+	ShaderVariable::ValueType formVectorType(ShaderVariable::ValueType valType, int compCount)
+	{
+		if (valType == ShaderVariable::ValueType::Boolean1) {
+			if (compCount == 2) return ShaderVariable::ValueType::Boolean2;
+			if (compCount == 3) return ShaderVariable::ValueType::Boolean3;
+			if (compCount == 4) return ShaderVariable::ValueType::Boolean4;
+		} else if (valType == ShaderVariable::ValueType::Integer1) {
+			if (compCount == 2) return ShaderVariable::ValueType::Integer2;
+			if (compCount == 3) return ShaderVariable::ValueType::Integer3;
+			if (compCount == 4) return ShaderVariable::ValueType::Integer4;
+		} else if (valType == ShaderVariable::ValueType::Float1) {
+			if (compCount == 2) return ShaderVariable::ValueType::Float2;
+			if (compCount == 3) return ShaderVariable::ValueType::Float3;
+			if (compCount == 4) return ShaderVariable::ValueType::Float4;
+		}
+
+		return ShaderVariable::ValueType::Count;
+	}
+	ShaderVariable::ValueType formMatrixType(ShaderVariable::ValueType valType, int compCount)
+	{
+		if (compCount == 2) return ShaderVariable::ValueType::Float2x2;
+		if (compCount == 3) return ShaderVariable::ValueType::Float3x3;
+		if (compCount == 4) return ShaderVariable::ValueType::Float4x4;
+
+		return ShaderVariable::ValueType::Count;
+	}
+
+	void GUIManager::m_autoUniforms(ShaderVariableContainer& varManager, SPIRVParser& spv, std::vector<std::string>& uniformList)
+	{
+		auto* pinUI = dynamic_cast<PinnedUI*>(Get(ViewID::Pinned));
+		std::vector<ShaderVariable*> vars = varManager.GetVariables();
+
+		// add variables
+		for (const auto& unif : spv.Uniforms) {
+			bool exists = false;
+			for (ShaderVariable* var : vars)
+				if (strcmp(var->Name, unif.Name.c_str()) == 0) {
+					exists = true;
+					break;
+				}
+
+			uniformList.push_back(unif.Name);
+
+			// add it
+			if (!exists) {
+				// type
+				ShaderVariable::ValueType valType = getTypeFromSPV(unif.Type);
+				if (valType == ShaderVariable::ValueType::Count) {
+					if (unif.Type == SPIRVParser::ValueType::Vector)
+						valType = formVectorType(getTypeFromSPV(unif.BaseType), unif.TypeComponentCount);
+					else if (unif.Type == SPIRVParser::ValueType::Matrix)
+						valType = formMatrixType(getTypeFromSPV(unif.BaseType), unif.TypeComponentCount);
+				}
+
+				if (valType == ShaderVariable::ValueType::Count) {
+					std::queue<std::string> curName;
+					std::queue<SPIRVParser::Variable> curType;
+
+					curType.push(unif);
+					curName.push(unif.Name);
+
+					while (!curType.empty()) {
+						SPIRVParser::Variable type = curType.front();
+						std::string name = curName.front();
+
+						curType.pop();
+						curName.pop();
+
+						if (type.Type != SPIRVParser::ValueType::Struct) {
+							for (ShaderVariable* var : vars)
+								if (strcmp(var->Name, name.c_str()) == 0) {
+									exists = true;
+									break;
+								}
+
+							uniformList.push_back(name);
+
+							if (!exists) {
+								// add variable
+								valType = getTypeFromSPV(type.Type);
+								if (valType == ShaderVariable::ValueType::Count) {
+									if (type.Type == SPIRVParser::ValueType::Vector)
+										valType = formVectorType(getTypeFromSPV(type.BaseType), type.TypeComponentCount);
+									else if (type.Type == SPIRVParser::ValueType::Matrix)
+										valType = formMatrixType(getTypeFromSPV(type.BaseType), type.TypeComponentCount);
+								}
+
+								if (valType != ShaderVariable::ValueType::Count) {
+									ShaderVariable newVariable = ShaderVariable(valType, name.c_str(), SystemShaderVariable::None);
+									ShaderVariable* ptr = varManager.AddCopy(newVariable);
+									if (Settings::Instance().General.AutoUniformsPin)
+										pinUI->Add(ptr);
+								}
+							}
+						} else {
+							// branch
+							if (spv.UserTypes.count(type.TypeName) > 0) {
+								const std::vector<SPIRVParser::Variable>& mems = spv.UserTypes[type.TypeName];
+								for (const auto& mem : mems) {
+									std::string memName = std::string(name.c_str()) + "." + mem.Name; // hack for \0
+									curType.push(mem);
+									curName.push(memName);
+								}
+							}
+						}
+					}
+				} else {
+					// usage
+					SystemShaderVariable usage = SystemShaderVariable::None;
+					if (Settings::Instance().General.AutoUniformsFunction)
+						usage = SystemVariableManager::GetTypeFromName(unif.Name);
+
+					// add and pin
+					if (valType != ShaderVariable::ValueType::Count) {
+						ShaderVariable newVariable = ShaderVariable(valType, unif.Name.c_str(), usage);
+						ShaderVariable* ptr = varManager.AddCopy(newVariable);
+						if (Settings::Instance().General.AutoUniformsPin && usage == SystemShaderVariable::None)
+							pinUI->Add(ptr);
+					}
+				}
+			}
+		}
+	}
+	void GUIManager::m_deleteUnusedUniforms(ShaderVariableContainer& varManager, const std::vector<std::string>& spv)
+	{
+		auto* pinUI = dynamic_cast<PinnedUI*>(Get(ViewID::Pinned));
+		std::vector<ShaderVariable*> vars = varManager.GetVariables();
+
+		for (ShaderVariable* var : vars) {
+			bool exists = false;
+			for (const auto& unif : spv)
+				if (strcmp(var->Name, unif.c_str()) == 0) {
+					exists = true;
+					break;
+				}
+
+			if (!exists) {
+				pinUI->Remove(var->Name);
+				varManager.Remove(var->Name);
 			}
 		}
 	}
