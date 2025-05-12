@@ -7,6 +7,7 @@
 #include "InterfaceManager.h"
 #include "Objects/Logger.h"
 #include "Objects/Settings.h"
+#include "UI/CodeEditorUI.h"
 #include "UI/PipelineUI.h"
 #include "UI/UIHelper.h"
 #include "imgui/examples/imgui_impl_opengl3.h"
@@ -14,6 +15,7 @@
 #include "misc/stb_image_resize.h"
 
 namespace ed {
+	class CodeEditorUI;
 	void GUIManager::Render()
 	{
 		ImDrawData* drawData = ImGui::GetDrawData();
@@ -44,20 +46,20 @@ namespace ed {
 		ImGui::GetStyle().WindowBorderSize = 0.0f;
 
 		ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-		ImGui::SetNextWindowSize(ImVec2(m_width, m_height));
+		ImGui::SetNextWindowSize(ImVec2(static_cast<float>(m_width), static_cast<float>(m_height)));
 		if (ImGui::Begin("##splash_screen", 0, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
-			ImGui::SetCursorPos(ImVec2((m_width - 350) / 2, (m_height - 324) / 6));
+			ImGui::SetCursorPos(ImVec2(static_cast<float>(m_width - 350) / 2, static_cast<float>(m_height - 324) / 6));
 			ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(m_splashScreenIcon)), ImVec2(350, 324));
 
-			ImGui::SetCursorPos(ImVec2((m_width - 199) / 2, m_height - 202 - 48));
+			ImGui::SetCursorPos(ImVec2(static_cast<float>(m_width - 199) / 2, static_cast<float>(m_height) - 202 - 48));
 			// ImGui::Image((ImTextureID)m_splashScreenText, ImVec2(199, 46));
 			ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(m_splashScreenIcon)), ImVec2(199, 46));
 
-			ImGui::SetCursorPos(ImVec2((m_width - 200) / 2 + 200, m_height - 202));
+			ImGui::SetCursorPos(ImVec2(static_cast<float>(m_width - 200) / 2 + 200, static_cast<float>(m_height) - 202));
 			// ImGui::Image((ImTextureID)m_sponsorDigitalOcean, ImVec2(200, 200));
 			ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(m_splashScreenIcon)), ImVec2(200, 200));
 
-			ImGui::SetCursorPos(ImVec2((m_width - 284 * 2) / 2 - 40, m_height - 202 + (101 + 32) / 2));
+			ImGui::SetCursorPos(ImVec2(static_cast<float>(m_width - 284 * 2) / 2 - 40, static_cast<float>(m_height - 202 + (101 + 32) / 2)));
 			// ImGui::Image((ImTextureID)m_sponsorEmbark, ImVec2(284, 64));
 			ImGui::Image(reinterpret_cast<ImTextureID>(static_cast<uintptr_t>(m_splashScreenIcon)), ImVec2(284, 64));
 		}
@@ -180,12 +182,12 @@ namespace ed {
 			glGenerateMipmap(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 0);
 			stbi_image_free(data);
-			data = NULL;
+			data = nullptr;
 		}
 
 		// digital ocean logo
 		data = stbi_load(white ? "./data/sponsors/DigitalOcean-white.png" : "./data/sponsors/DigitalOcean-black.png", &width, &height, &orig_format, req_format);
-		if (data == NULL)
+		if (data == nullptr)
 			ed::Logger::Get().Log("Failed to load DigitalOcean logo", true);
 		else {
 			glGenTextures(1, &m_sponsorDigitalOcean);
@@ -201,7 +203,7 @@ namespace ed {
 		// TODO: write some system so that I do not have to do this manually
 		// embark studios
 		data = stbi_load(white ? "./data/sponsors/Embark-white.png" : "./data/sponsors/Embark-black.png", &width, &height, &orig_format, req_format);
-		if (data == NULL)
+		if (data == nullptr)
 			ed::Logger::Get().Log("Failed to load Embark logo", true);
 		else {
 			auto outEmbark = static_cast<unsigned char*>(malloc(284 * 64 * 4));
@@ -225,5 +227,152 @@ namespace ed {
 		m_splashScreenFrame = 0;
 		m_splashScreenLoaded = false;
 		m_splashScreenTimer.Restart();
+	}
+
+	void GUIManager::m_renderFocusMode()
+	{
+		ImGui::SetCursorPos(ImVec2(10, Settings::Instance().CalculateSize(35.0f)));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, 0xB5000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+		ImGui::BeginChild("##focus_container", ImVec2((float)m_width / 2 - 50, -Settings::Instance().CalculateSize(10) - (float)Settings::Instance().Preview.StatusBar * 35.0f), false);
+
+		if (ImGui::BeginTabBar("PassTabs")) {
+			auto& passes = m_data->Pipeline.GetList();
+			for (auto& pass : passes) {
+				if (pass->Type == PipelineItem::ItemType::ShaderPass) {
+					if (ImGui::BeginTabItem(pass->Name)) {
+						auto* passData = static_cast<pipe::ShaderPass*>(pass->Data);
+
+						// shader tabs for this pass
+						if (ImGui::BeginTabBar("ShaderTabs")) {
+							auto* codeEditor = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code));
+
+							// vertex shader
+							if (ImGui::BeginTabItem("Vertex shader")) {
+								m_renderTextEditorFocusMode("Vertex shader editor", pass, ShaderStage::Vertex);
+								ImGui::EndTabItem();
+							}
+
+							// geometry shader if used
+							if (passData->GSUsed) {
+								// geometry shader
+								if (ImGui::BeginTabItem("Geometry shader")) {
+									m_renderTextEditorFocusMode("Geometry shader editor", pass, ShaderStage::Geometry);
+									ImGui::EndTabItem();
+								}
+							}
+
+							// tessellation shaders
+							if (passData->TSUsed) {
+								// tc shader
+								if (ImGui::BeginTabItem("Tessellation control shader")) {
+									m_renderTextEditorFocusMode("Tessellation control shader editor", pass, ShaderStage::TessellationControl);
+									ImGui::EndTabItem();
+								}
+
+								// te shader
+								if (ImGui::BeginTabItem("Tessellation evaluation shader")) {
+									m_renderTextEditorFocusMode("Tessellation evaluation shader editor", pass, ShaderStage::TessellationEvaluation);
+									ImGui::EndTabItem();
+								}
+							}
+
+							// pixel shader
+							if (ImGui::BeginTabItem("Pixel shader")) {
+								m_renderTextEditorFocusMode("Pixel shader editor", pass, ShaderStage::Pixel);
+								ImGui::EndTabItem();
+							}
+
+							ImGui::EndTabBar();
+						}
+
+						ImGui::EndTabItem();
+					}
+				} else if (pass->Type == PipelineItem::ItemType::ComputePass) {
+					if (ImGui::BeginTabItem(pass->Name)) {
+						auto* passData = static_cast<pipe::ComputePass*>(pass->Data);
+
+						// shader tabs for this pass
+						if (ImGui::BeginTabBar("ShaderTabs")) {
+							auto* codeEditor = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code));
+
+							// vertex shader
+							if (ImGui::BeginTabItem("Compute shader")) {
+								m_renderTextEditorFocusMode("Compute shader editor", pass, ShaderStage::Compute);
+								ImGui::EndTabItem();
+							}
+
+							ImGui::EndTabBar();
+						}
+
+						ImGui::EndTabItem();
+					}
+				}
+			}
+			ImGui::EndTabBar();
+		}
+
+		ImGui::EndChild();
+		ImGui::PopStyleColor();
+	}
+	void GUIManager::m_renderTextEditorFocusMode(const std::string& name, void* item, ShaderStage stage)
+	{
+		auto* codeEditor = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code));
+
+		TextEditor* editor = codeEditor->Get(static_cast<PipelineItem*>(item), stage);
+		if (editor == nullptr) {
+			codeEditor->Open(static_cast<PipelineItem*>(item), stage);
+			editor = codeEditor->Get(static_cast<PipelineItem*>(item), stage);
+		}
+
+		codeEditor->DrawTextEditor(name, editor);
+	}
+
+	void GUIManager::m_renderDAPMode(float delta)
+	{
+		// PIXEL INSPECT //
+		ImGui::SetNextWindowPos(ImVec2((float)m_width - 310, (float)m_height - 420));
+		ImGui::SetNextWindowSize(ImVec2(280, 390), ImGuiCond_Always);
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xB5000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, 0x55000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+		ImGui::Begin("##dap_wnd_pixelinsp", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+
+		Get(ViewID::PixelInspect)->Update(delta); // is delta necessary for the PixelInspect window?
+
+		ImGui::End();
+		ImGui::PopStyleColor(2);
+
+		if (m_data->Debugger.IsDebugging()) {
+			// GS OUTPUT WINDOW //
+			if (m_data->Debugger.GetStage() == ShaderStage::Geometry) {
+				float gsWidth = ((float)m_width / (float)m_height) * 390.0f;
+
+				ImGui::SetNextWindowPos(ImVec2((float)m_width - 310 - 30 - gsWidth, (float)m_height - 420));
+				ImGui::SetNextWindowSize(ImVec2(gsWidth, 390), ImGuiCond_Always);
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xB5000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, 0x55000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+				ImGui::Begin("##dap_wnd_gsoutput", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+
+				Get(ViewID::DebugGeometryOutput)->Update(delta);
+
+				ImGui::End();
+				ImGui::PopStyleColor(2);
+			}
+
+			// TS CONTROL OUTPUT //
+			else if (m_data->Debugger.GetStage() == ShaderStage::TessellationControl) {
+				float tsWidth = 280;
+
+				ImGui::SetNextWindowPos(ImVec2((float)m_width - 310 - 30 - tsWidth, (float)m_height - 420));
+				ImGui::SetNextWindowSize(ImVec2(tsWidth, 390), ImGuiCond_Always);
+				ImGui::PushStyleColor(ImGuiCol_WindowBg, 0xB5000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+				ImGui::PushStyleColor(ImGuiCol_ChildBg, 0x55000000 | (ImGui::GetColorU32(ImGuiCol_WindowBg) & 0x00FFFFFF));
+				ImGui::Begin("##dap_wnd_tcsoutput", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+
+				Get(ViewID::DebugTessControlOutput)->Update(delta); // TODO: doesn't work for some reason
+
+				ImGui::End();
+				ImGui::PopStyleColor(2);
+			}
+		}
 	}
 }
