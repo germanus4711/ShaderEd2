@@ -118,7 +118,7 @@ namespace ed {
 			return ret;
 		}
 		// Introducing a constant for base font size
-		static constexpr float BASE_FONT_SIZE = 18.0f;
+		static constexpr float BASE_FONT_SIZE = 12.0f;
 
 		// Helper method for font scaling factor calculation
 		[[nodiscard]] inline float GetFontScaleFactor() const

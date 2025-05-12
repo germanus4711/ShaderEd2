@@ -39,14 +39,14 @@ namespace ed {
 		General.Tips = false;
 		DPIScale = 1.0f;
 		strcpy(General.Font, "null");
-		General.FontSize = 15;
+		General.FontSize = 8;
 		m_parseExt("hlsl", General.HLSLExtensions);
 		m_parseExt("vk", General.VulkanGLSLExtensions);
 
 		Editor.SmartPredictions = true;
 		Editor.ActiveSmartPredictions = false;
 		strcpy(Editor.Font, "data/inconsolata.ttf");
-		Editor.FontSize = 15;
+		Editor.FontSize = 8;
 		Editor.ShowWhitespace = false;
 		Editor.HiglightCurrentLine = true;
 		Editor.LineNumbers = true;
@@ -123,9 +123,9 @@ namespace ed {
 		General.StartUpTemplate = ini.Get("general", "template", "GLSL");
 		General.AutoScale = ini.GetBoolean("general", "autoscale", true);
 		General.Tips = ini.GetBoolean("general", "tips", false);
-		DPIScale = ini.GetReal("general", "uiscale", 1.0f);
+		DPIScale = static_cast<float>(ini.GetReal("general", "uiscale", 1.0f));
 		strcpy(General.Font, ini.Get("general", "font", "data/NotoSans.ttf").c_str());
-		General.FontSize = ini.GetInteger("general", "fontsize", 18);
+		General.FontSize = static_cast<int>(ini.GetInteger("general", "fontsize", 8));
 		m_parseExt(ini.Get("general", "hlslext", "hlsl"), General.HLSLExtensions);
 		m_parseExt(ini.Get("general", "vkext", "vk"), General.VulkanGLSLExtensions);
 		m_parsePluginExt(ini.Get("general", "plext", ""), General.PluginShaderExtensions);
@@ -133,7 +133,7 @@ namespace ed {
 		Editor.SmartPredictions = ini.GetBoolean("editor", "smartpred", true);
 		Editor.ActiveSmartPredictions = ini.GetBoolean("editor", "activesmartpred", false);
 		strcpy(Editor.Font, ini.Get("editor", "font", "data/inconsolata.ttf").c_str());
-		Editor.FontSize = ini.GetInteger("editor", "fontsize", 17);
+		Editor.FontSize = static_cast<int>(ini.GetInteger("editor", "fontsize", 8));
 		Editor.ShowWhitespace = ini.GetBoolean("editor", "whitespace", false);
 		Editor.HiglightCurrentLine = ini.GetBoolean("editor", "highlightline", true);
 		Editor.LineNumbers = ini.GetBoolean("editor", "linenumbers", true);
@@ -143,7 +143,7 @@ namespace ed {
 		Editor.SmartIndent = ini.GetBoolean("editor", "smartindent", true);
 		Editor.AutoIndentOnPaste = ini.GetBoolean("editor", "autoindentonpaste", false);
 		Editor.InsertSpaces = ini.GetBoolean("editor", "insertspace", false);
-		Editor.TabSize = std::max<int>(std::min<int>(ini.GetInteger("editor", "tabsize", 4), 12), 1);
+		Editor.TabSize = std::max<int>(std::min<int>(static_cast<int>(ini.GetInteger("editor", "tabsize", 4)), 8), 1);
 		Editor.FunctionTooltips = ini.GetBoolean("editor", "functooltips", true);
 		Editor.FunctionDeclarationTooltips = ini.GetBoolean("editor", "funcdeclrtooltips", false);
 		Editor.SyntaxHighlighting = ini.GetBoolean("editor", "syntaxhighlighting", true);
@@ -162,16 +162,16 @@ namespace ed {
 		Preview.BoundingBox = ini.GetBoolean("preview", "boundingbox", true);
 		Preview.Gizmo = ini.GetBoolean("preview", "gizmo", true);
 		Preview.GizmoRotationUI = ini.GetBoolean("preview", "gizmorotaui", true);
-		Preview.GizmoSnapTranslation = ini.GetInteger("preview", "gizmosnaptrans", 0);
-		Preview.GizmoSnapScale = ini.GetInteger("preview", "gizmosnapscale", 0);
-		Preview.GizmoSnapRotation = ini.GetInteger("preview", "gizmosnaprota", 0);
-		Preview.GizmoSnapTranslation = ini.GetInteger("preview", "gizmosnaptrans", 0);
+		Preview.GizmoSnapTranslation = static_cast<int>(ini.GetInteger("preview", "gizmosnaptrans", 0));
+		Preview.GizmoSnapScale = static_cast<int>(ini.GetInteger("preview", "gizmosnapscale", 0));
+		Preview.GizmoSnapRotation = static_cast<int>(ini.GetInteger("preview", "gizmosnaprota", 0));
+		Preview.GizmoSnapTranslation = static_cast<int>(ini.GetInteger("preview", "gizmosnaptrans", 0));
 		Preview.PropertyPick = ini.GetBoolean("preview", "propertypick", true);
 		Preview.StatusBar = ini.GetBoolean("preview", "statusbar", true);
-		Preview.FPSLimit = ini.GetInteger("preview", "fpslimit", -1);
+		Preview.FPSLimit = static_cast<int>(ini.GetInteger("preview", "fpslimit", -1));
 		Preview.ApplyFPSLimitToApp = ini.GetBoolean("preview", "fpslimitwholeapp", false);
 		Preview.LostFocusLimitFPS = ini.GetBoolean("preview", "fpslimitlostfocus", false);
-		Preview.MSAA = ini.GetInteger("preview", "msaa", 1);
+		Preview.MSAA = static_cast<int>(ini.GetInteger("preview", "msaa", 1));
 
 		m_parseExt(ini.Get("plugins", "notloaded", ""), Plugins.NotLoaded);
 
