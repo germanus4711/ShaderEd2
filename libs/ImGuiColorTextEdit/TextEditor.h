@@ -157,7 +157,7 @@ public:
 	};
 
 	// Represents a character coordinate from the user's point of view,
-	// i. e. consider an uniform grid (assuming fixed-width font) on the
+	// i.e. consider an uniform grid (assuming fixed-width font) on the
 	// screen as it is rendered, and each cell has its own coordinate, starting from 0.
 	// Tabs are counted as [1..mTabSize] count empty spaces, depending on
 	// how many space is necessary to reach the next tab stop.
@@ -237,7 +237,7 @@ public:
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
 	typedef std::map<int, std::string> ErrorMarkers;
-	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
+	typedef std::array<ImU32, static_cast<unsigned>(PaletteIndex::Max)> Palette;
 	typedef uint8_t Char;
 
 	struct Glyph {
@@ -305,9 +305,9 @@ public:
 	~TextEditor();
 
 	void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
-	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }
+	[[nodiscard]] const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }
 
-	const Palette& GetPalette() const { return mPaletteBase; }
+	[[nodiscard]] const Palette& GetPalette() const { return mPaletteBase; }
 	void SetPalette(const Palette& aValue);
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
@@ -317,11 +317,11 @@ public:
 	void RemoveBreakpoint(int line);
 	void SetBreakpointEnabled(int line, bool enable);
 	Breakpoint& GetBreakpoint(int line);
-	inline const std::vector<Breakpoint>& GetBreakpoints() { return mBreakpoints; }
+	const std::vector<Breakpoint>& GetBreakpoints() { return mBreakpoints; }
 	void SetCurrentLineIndicator(int line, bool displayBar = true);
-	inline int GetCurrentLineIndicator() { return mDebugCurrentLine; }
+	int GetCurrentLineIndicator() { return mDebugCurrentLine; }
 
-	inline bool IsDebugging() { return mDebugCurrentLine > 0; }
+	bool IsDebugging() { return mDebugCurrentLine > 0; }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -333,38 +333,38 @@ public:
 	[[nodiscard]] std::string GetSelectedText() const;
 	[[nodiscard]] std::string GetCurrentLineText() const;
 
-	int GetTotalLines() const { return (int)mLines.size(); }
-	bool IsOverwrite() const { return mOverwrite; }
+	[[nodiscard]] int GetTotalLines() const { return (int)mLines.size(); }
+	[[nodiscard]] bool IsOverwrite() const { return mOverwrite; }
 
-	bool IsFocused() const { return mFocused; }
+	[[nodiscard]] bool IsFocused() const { return mFocused; }
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() { return mReadOnly || IsDebugging(); }
-	bool IsTextChanged() const { return mTextChanged; }
-	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
-	inline void ResetTextChanged()
+	[[nodiscard]] bool IsTextChanged() const { return mTextChanged; }
+	[[nodiscard]] bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
+	void ResetTextChanged()
 	{
 		mTextChanged = false;
 		mChangedLines.clear();
 	}
 
-	bool IsColorizerEnabled() const { return mColorizerEnabled; }
+	[[nodiscard]] bool IsColorizerEnabled() const { return mColorizerEnabled; }
 	void SetColorizerEnable(bool aValue);
 
 	Coordinates GetCorrectCursorPosition(); // The GetCursorPosition() returns the cursor pos where \t == 4 spaces
-	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
+	[[nodiscard]] Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
 
-	inline void SetHandleMouseInputs(bool aValue) { mHandleMouseInputs = aValue; }
-	inline bool IsHandleMouseInputsEnabled() const { return mHandleKeyboardInputs; }
+	void SetHandleMouseInputs(bool aValue) { mHandleMouseInputs = aValue; }
+	[[nodiscard]] bool IsHandleMouseInputsEnabled() const { return mHandleKeyboardInputs; }
 
-	inline void SetHandleKeyboardInputs(bool aValue) { mHandleKeyboardInputs = aValue; }
-	inline bool IsHandleKeyboardInputsEnabled() const { return mHandleKeyboardInputs; }
+	void SetHandleKeyboardInputs(bool aValue) { mHandleKeyboardInputs = aValue; }
+	[[nodiscard]] bool IsHandleKeyboardInputsEnabled() const { return mHandleKeyboardInputs; }
 
-	inline void SetImGuiChildIgnored(bool aValue) { mIgnoreImGuiChild = aValue; }
-	inline bool IsImGuiChildIgnored() const { return mIgnoreImGuiChild; }
+	void SetImGuiChildIgnored(bool aValue) { mIgnoreImGuiChild = aValue; }
+	[[nodiscard]] bool IsImGuiChildIgnored() const { return mIgnoreImGuiChild; }
 
-	inline void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
-	inline bool IsShowingWhitespaces() const { return mShowWhitespaces; }
+	void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
+	[[nodiscard]] bool IsShowingWhitespaces() const { return mShowWhitespaces; }
 
 	void InsertText(const std::string& aValue, bool indent = false);
 	void InsertText(const char* aValue, bool indent = false);
@@ -383,7 +383,7 @@ public:
 	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
 	void SelectWordUnderCursor();
 	void SelectAll();
-	bool HasSelection() const;
+	[[nodiscard]] bool HasSelection() const;
 
 	void Copy();
 	void Cut();
@@ -397,43 +397,43 @@ public:
 
 	std::vector<std::string> GetRelevantExpressions(int line);
 
-	inline void SetHighlightedLines(const std::vector<int>& lines) { mHighlightedLines = lines; }
-	inline void ClearHighlightedLines() { mHighlightedLines.clear(); }
+	void SetHighlightedLines(const std::vector<int>& lines) { mHighlightedLines = lines; }
+	void ClearHighlightedLines() { mHighlightedLines.clear(); }
 
-	inline void SetTabSize(int s) { mTabSize = std::max<int>(0, std::min<int>(32, s)); }
-	inline int GetTabSize() { return mTabSize; }
+	void SetTabSize(int s) { mTabSize = std::max<int>(0, std::min<int>(32, s)); }
+	int GetTabSize() { return mTabSize; }
 
-	inline void SetInsertSpaces(bool s) { mInsertSpaces = s; }
-	inline int GetInsertSpaces() { return mInsertSpaces; }
+	void SetInsertSpaces(bool s) { mInsertSpaces = s; }
+	int GetInsertSpaces() { return mInsertSpaces; }
 
-	inline void SetSmartIndent(bool s) { mSmartIndent = s; }
-	inline void SetAutoIndentOnPaste(bool s) { mAutoindentOnPaste = s; }
-	inline void SetHighlightLine(bool s) { mHighlightLine = s; }
-	inline void SetCompleteBraces(bool s) { mCompleteBraces = s; }
-	inline void SetHorizontalScroll(bool s) { mHorizontalScroll = s; }
-	inline void SetSmartPredictions(bool s) { mAutocomplete = s; }
-	inline void SetFunctionDeclarationTooltip(bool s) { mFunctionDeclarationTooltipEnabled = s; }
-	inline void SetFunctionTooltips(bool s) { mFuncTooltips = s; }
-	inline void SetActiveAutocomplete(bool cac) { mActiveAutocomplete = cac; }
-	inline void SetScrollbarMarkers(bool markers) { mScrollbarMarkers = markers; }
-	inline void SetSidebarVisible(bool s) { mSidebar = s; }
-	inline void SetSearchEnabled(bool s) { mHasSearch = s; }
-	inline void SetHiglightBrackets(bool s) { mHighlightBrackets = s; }
-	inline void SetFoldEnabled(bool s) { mFoldEnabled = s; }
+	void SetSmartIndent(bool s) { mSmartIndent = s; }
+	void SetAutoIndentOnPaste(bool s) { mAutoindentOnPaste = s; }
+	void SetHighlightLine(bool s) { mHighlightLine = s; }
+	void SetCompleteBraces(bool s) { mCompleteBraces = s; }
+	void SetHorizontalScroll(bool s) { mHorizontalScroll = s; }
+	void SetSmartPredictions(bool s) { mAutocomplete = s; }
+	void SetFunctionDeclarationTooltip(bool s) { mFunctionDeclarationTooltipEnabled = s; }
+	void SetFunctionTooltips(bool s) { mFuncTooltips = s; }
+	void SetActiveAutocomplete(bool cac) { mActiveAutocomplete = cac; }
+	void SetScrollbarMarkers(bool markers) { mScrollbarMarkers = markers; }
+	void SetSidebarVisible(bool s) { mSidebar = s; }
+	void SetSearchEnabled(bool s) { mHasSearch = s; }
+	void SetHiglightBrackets(bool s) { mHighlightBrackets = s; }
+	void SetFoldEnabled(bool s) { mFoldEnabled = s; }
 
-	inline void SetUIScale(float scale) { mUIScale = scale; }
-	inline void SetUIFontSize(float size) { mUIFontSize = size; }
-	inline void SetEditorFontSize(float size) { mEditorFontSize = size; }
+	void SetUIScale(float scale) { mUIScale = scale; }
+	void SetUIFontSize(float size) { mUIFontSize = size; }
+	void SetEditorFontSize(float size) { mEditorFontSize = size; }
 
 	void SetShortcut(TextEditor::ShortcutID id, Shortcut s);
 
-	inline void SetShowLineNumbers(bool s)
+	void SetShowLineNumbers(bool s)
 	{
 		mShowLineNumbers = s;
-		mTextStart = (s ? 20 : 6);
+		mTextStart = static_cast<float>(s ? 20 : 6);
 		mLeftMargin = (s ? (DebugDataSpace + LineNumberSpace) : (DebugDataSpace - LineNumberSpace));
 	}
-	inline int GetTextStart() const { return mShowLineNumbers ? 7 : 3; }
+	[[nodiscard]] int GetTextStart() const { return mShowLineNumbers ? 7 : 3; }
 
 	void Colorize(int aFromLine = 0, int aCount = -1);
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
@@ -446,32 +446,32 @@ public:
 		mACUniforms.clear();
 		mACGlobals.clear();
 	}
-	inline void ClearAutocompleteEntries()
+	void ClearAutocompleteEntries()
 	{
 		mACEntries.clear();
 		mACEntrySearch.clear();
 	}
-	inline const std::unordered_map<std::string, ed::SPIRVParser::Function>& GetAutocompleteFunctions() { return mACFunctions; }
-	inline const std::unordered_map<std::string, std::vector<ed::SPIRVParser::Variable>>& GetAutocompleteUserTypes() { return mACUserTypes; }
-	inline const std::vector<ed::SPIRVParser::Variable>& GetAutocompleteUniforms() { return mACUniforms; }
-	inline const std::vector<ed::SPIRVParser::Variable>& GetAutocompleteGlobals() { return mACGlobals; }
-	inline void SetAutocompleteFunctions(const std::unordered_map<std::string, ed::SPIRVParser::Function>& funcs)
+	const std::unordered_map<std::string, ed::SPIRVParser::Function>& GetAutocompleteFunctions() { return mACFunctions; }
+	const std::unordered_map<std::string, std::vector<ed::SPIRVParser::Variable>>& GetAutocompleteUserTypes() { return mACUserTypes; }
+	const std::vector<ed::SPIRVParser::Variable>& GetAutocompleteUniforms() { return mACUniforms; }
+	const std::vector<ed::SPIRVParser::Variable>& GetAutocompleteGlobals() { return mACGlobals; }
+	void SetAutocompleteFunctions(const std::unordered_map<std::string, ed::SPIRVParser::Function>& funcs)
 	{
 		mACFunctions = funcs;
 	}
-	inline void SetAutocompleteUserTypes(const std::unordered_map<std::string, std::vector<ed::SPIRVParser::Variable>>& utypes)
+	void SetAutocompleteUserTypes(const std::unordered_map<std::string, std::vector<ed::SPIRVParser::Variable>>& utypes)
 	{
 		mACUserTypes = utypes;
 	}
-	inline void SetAutocompleteUniforms(const std::vector<ed::SPIRVParser::Variable>& unis)
+	void SetAutocompleteUniforms(const std::vector<ed::SPIRVParser::Variable>& unis)
 	{
 		mACUniforms = unis;
 	}
-	inline void SetAutocompleteGlobals(const std::vector<ed::SPIRVParser::Variable>& globs)
+	void SetAutocompleteGlobals(const std::vector<ed::SPIRVParser::Variable>& globs)
 	{
 		mACGlobals = globs;
 	}
-	inline void AddAutocompleteEntry(const std::string& search, const std::string& display, const std::string& value)
+	void AddAutocompleteEntry(const std::string& search, const std::string& display, const std::string& value)
 	{
 		mACEntrySearch.push_back(search);
 		mACEntries.push_back(std::make_pair(display, value));
@@ -503,8 +503,8 @@ public:
 	std::function<void(TextEditor*, const std::string&, const std::string&)> RequestOpen;
 	std::function<void(TextEditor*)> OnContentUpdate;
 
-	inline void SetPath(const std::string& path) { mPath = path; }
-	inline const std::string& GetPath() { return mPath; }
+	void SetPath(const std::string& path) { mPath = path; }
+	const std::string& GetPath() { return mPath; }
 
 private:
 	std::string mPath;
@@ -519,20 +519,20 @@ private:
 
 	class UndoRecord {
 	public:
-		UndoRecord() { }
-		~UndoRecord() { }
+		UndoRecord() = default;
+		~UndoRecord() = default;
 
 		UndoRecord(
 			const std::string& aAdded,
-			const TextEditor::Coordinates aAddedStart,
-			const TextEditor::Coordinates aAddedEnd,
+			Coordinates aAddedStart,
+			Coordinates aAddedEnd,
 
 			const std::string& aRemoved,
-			const TextEditor::Coordinates aRemovedStart,
-			const TextEditor::Coordinates aRemovedEnd,
+			Coordinates aRemovedStart,
+			Coordinates aRemovedEnd,
 
-			TextEditor::EditorState& aBefore,
-			TextEditor::EditorState& aAfter);
+			EditorState& aBefore,
+			EditorState& aAfter);
 
 		void Undo(TextEditor* aEditor);
 		void Redo(TextEditor* aEditor);
@@ -552,36 +552,36 @@ private:
 	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
-	float TextDistanceToLineStart(const Coordinates& aFrom) const;
+	[[nodiscard]] float TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
-	int GetPageSize() const;
-	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
-	Coordinates GetActualCursorCoordinates() const;
-	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
+	[[nodiscard]] int GetPageSize() const;
+	[[nodiscard]] std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
+	[[nodiscard]] Coordinates GetActualCursorCoordinates() const;
+	[[nodiscard]] Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
 	void Advance(Coordinates& aCoordinates) const;
 	void DeleteRange(const Coordinates& aStart, const Coordinates& aEnd);
 	int InsertTextAt(Coordinates& aWhere, const char* aValue, bool indent = false);
 	void AddUndo(UndoRecord& aValue);
-	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
-	Coordinates MousePosToCoordinates(const ImVec2& aPosition) const;
-	ImVec2 CoordinatesToScreenPos(const TextEditor::Coordinates& aPosition) const;
-	Coordinates FindWordStart(const Coordinates& aFrom) const;
-	Coordinates FindWordEnd(const Coordinates& aFrom) const;
-	Coordinates FindNextWord(const Coordinates& aFrom) const;
-	int GetCharacterIndex(const Coordinates& aCoordinates) const;
-	int GetCharacterColumn(int aLine, int aIndex) const;
-	int GetLineCharacterCount(int aLine) const;
-	int GetLineMaxColumn(int aLine) const;
-	bool IsOnWordBoundary(const Coordinates& aAt) const;
+	[[nodiscard]] Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
+	[[nodiscard]] Coordinates MousePosToCoordinates(const ImVec2& aPosition) const;
+	[[nodiscard]] ImVec2 CoordinatesToScreenPos(const TextEditor::Coordinates& aPosition) const;
+	[[nodiscard]] Coordinates FindWordStart(const Coordinates& aFrom) const;
+	[[nodiscard]] Coordinates FindWordEnd(const Coordinates& aFrom) const;
+	[[nodiscard]] Coordinates FindNextWord(const Coordinates& aFrom) const;
+	[[nodiscard]] int GetCharacterIndex(const Coordinates& aCoordinates) const;
+	[[nodiscard]] int GetCharacterColumn(int aLine, int aIndex) const;
+	[[nodiscard]] int GetLineCharacterCount(int aLine) const;
+	[[nodiscard]] int GetLineMaxColumn(int aLine) const;
+	[[nodiscard]] bool IsOnWordBoundary(const Coordinates& aAt) const;
 	void RemoveLine(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex, int column);
 	void EnterCharacter(ImWchar aChar, bool aShift);
 	void Backspace();
 	void DeleteSelection();
-	std::string GetWordUnderCursor() const;
-	std::string GetWordAt(const Coordinates& aCoords) const;
-	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
+	[[nodiscard]] std::string GetWordUnderCursor() const;
+	[[nodiscard]] std::string GetWordAt(const Coordinates& aCoords) const;
+	[[nodiscard]] ImU32 GetGlyphColor(const Glyph& aGlyph) const;
 
 	Coordinates FindFirst(const std::string& what, const Coordinates& fromWhere);
 
@@ -592,20 +592,20 @@ private:
 	bool mFuncTooltips;
 
 	float mUIScale, mUIFontSize, mEditorFontSize;
-	inline float mUICalculateSize(float h)
+	float mUICalculateSize(float h)
 	{
 		return h * (mUIScale + mUIFontSize / 18.0f - 1.0f);
 	}
-	inline float mEditorCalculateSize(float h)
+	float mEditorCalculateSize(float h)
 	{
 		return h * (mUIScale + mEditorFontSize / 18.0f - 1.0f);
 	}
 
 	bool mFunctionDeclarationTooltipEnabled;
-	TextEditor::Coordinates mFunctionDeclarationCoord;
+	Coordinates mFunctionDeclarationCoord;
 	bool mFunctionDeclarationTooltip;
 	std::string mFunctionDeclaration;
-	void mOpenFunctionDeclarationTooltip(const std::string& obj, TextEditor::Coordinates coord);
+	void mOpenFunctionDeclarationTooltip(const std::string& obj, Coordinates coord);
 
 	std::string mBuildFunctionDef(const std::string& func, const std::string& lang);
 	std::string mBuildVariableType(const ed::SPIRVParser::Variable& var, const std::string& lang);

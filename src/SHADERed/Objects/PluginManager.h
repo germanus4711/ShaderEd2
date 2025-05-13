@@ -21,7 +21,7 @@ namespace ed {
 		void BeginRender();
 		void EndRender();
 
-		void RegisterPlugin(IPlugin1* plugin, const std::string pname, int apiVer, int pluginVer, void* procDLL = nullptr);
+		void RegisterPlugin(IPlugin1* plugin, std::string pname, int apiVer, int pluginVer, void* procDLL = nullptr);
 		
 		IPlugin1* GetPlugin(const std::string& plugin);
 		const std::string& GetPluginName(IPlugin1* plugin);
@@ -30,7 +30,7 @@ namespace ed {
 
 		bool IsLoaded(const std::string& plugin);
 
-		inline const std::vector<std::string>& GetPluginList() { return m_names; }
+		const std::vector<std::string>& GetPluginList() { return m_names; }
 
 		void ShowCustomMenu();
 		void ShowMenuItems(const std::string& menu);
@@ -48,9 +48,9 @@ namespace ed {
 
 		void OnEvent(const SDL_Event& e);
 
-		inline const std::vector<IPlugin1*>& Plugins() { return m_plugins; }
+		const std::vector<IPlugin1*>& Plugins() { return m_plugins; }
 
-		inline const std::vector<std::string>& GetIncompatiblePlugins() { return m_incompatible; }
+		const std::vector<std::string>& GetIncompatiblePlugins() { return m_incompatible; }
 
 	private:
 		std::vector<void*> m_proc;
@@ -61,8 +61,8 @@ namespace ed {
 		
 		std::vector<std::string> m_incompatible;
 
-		InterfaceManager* m_data;
-		GUIManager* m_ui;
+		InterfaceManager* m_data = nullptr;
+		GUIManager* m_ui = nullptr;
 		std::vector<std::string> m_iniLines;
 	};
 }

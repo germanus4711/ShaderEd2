@@ -1173,35 +1173,35 @@ namespace ed {
 	}
 	GLenum ProjectParser::m_toBlend(const char* text)
 	{
-		for (int k = 0; k < HARRAYSIZE(BLEND_NAMES); k++)
+		for (int k = 0; k < std::size(BLEND_NAMES); k++)
 			if (strcmp(text, BLEND_NAMES[k]) == 0)
 				return BLEND_VALUES[k];
 		return GL_CONSTANT_COLOR;
 	}
 	GLenum ProjectParser::m_toBlendOp(const char* text)
 	{
-		for (int k = 0; k < HARRAYSIZE(BLEND_OPERATOR_NAMES); k++)
+		for (int k = 0; k < std::size(BLEND_OPERATOR_NAMES); k++)
 			if (strcmp(text, BLEND_OPERATOR_NAMES[k]) == 0)
 				return BLEND_OPERATOR_VALUES[k];
 		return GL_FUNC_ADD;
 	}
 	GLenum ProjectParser::m_toComparisonFunc(const char* str)
 	{
-		for (int k = 0; k < HARRAYSIZE(COMPARISON_FUNCTION_NAMES); k++)
+		for (int k = 0; k < std::size(COMPARISON_FUNCTION_NAMES); k++)
 			if (strcmp(str, COMPARISON_FUNCTION_NAMES[k]) == 0)
 				return COMPARISON_FUNCTION_VALUES[k];
 		return GL_ALWAYS;
 	}
 	GLenum ProjectParser::m_toStencilOp(const char* str)
 	{
-		for (int k = 0; k < HARRAYSIZE(STENCIL_OPERATION_NAMES); k++)
+		for (int k = 0; k < std::size(STENCIL_OPERATION_NAMES); k++)
 			if (strcmp(str, STENCIL_OPERATION_NAMES[k]) == 0)
 				return STENCIL_OPERATION_VALUES[k];
 		return GL_KEEP;
 	}
 	GLenum ProjectParser::m_toCullMode(const char* str)
 	{
-		for (int k = 0; k < HARRAYSIZE(CULL_MODE_NAMES); k++)
+		for (int k = 0; k < std::size(CULL_MODE_NAMES); k++)
 			if (strcmp(str, CULL_MODE_NAMES[k]) == 0)
 				return CULL_MODE_VALUES[k];
 		return GL_BACK;
@@ -1246,7 +1246,7 @@ namespace ed {
 					itemNode.append_child("instancecount").text().set(tData->InstanceCount);
 				if (tData->InstanceBuffer != nullptr)
 					itemNode.append_child("instancebuffer").text().set(m_objects->GetByBufferID(((BufferObject*)tData->InstanceBuffer)->ID)->Name.c_str());
-				for (int tind = 0; tind < HARRAYSIZE(TOPOLOGY_ITEM_VALUES); tind++) {
+				for (int tind = 0; tind < std::size(TOPOLOGY_ITEM_VALUES); tind++) {
 					if (TOPOLOGY_ITEM_VALUES[tind] == tData->Topology) {
 						itemNode.append_child("topology").text().set(TOPOLOGY_ITEM_NAMES[tind]);
 						break;
@@ -1361,14 +1361,14 @@ namespace ed {
 					itemNode.append_child("instancecount").text().set(tData->InstanceCount);
 				if (tData->InstanceBuffer != nullptr)
 					itemNode.append_child("instancebuffer").text().set(m_objects->GetByBufferID(((BufferObject*)tData->InstanceBuffer)->ID)->Name.c_str());
-				for (int tind = 0; tind < HARRAYSIZE(TOPOLOGY_ITEM_VALUES); tind++) {
+				for (int tind = 0; tind < std::size(TOPOLOGY_ITEM_VALUES); tind++) {
 					if (TOPOLOGY_ITEM_VALUES[tind] == tData->Topology) {
 						itemNode.append_child("topology").text().set(TOPOLOGY_ITEM_NAMES[tind]);
 						break;
 					}
 				}
 			} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-				pipe::PluginItemData* plData = (pipe::PluginItemData*)item->Data;
+				auto* plData = static_cast<pipe::PluginItemData*>(item->Data);
 				m_addPlugin(m_plugins->GetPluginName(plData->Owner));
 
 				itemNode.append_attribute("type").set_value("plugin");
@@ -1391,7 +1391,7 @@ namespace ed {
 	{
 		for (pugi::xml_node itemNode : node.children()) {
 			char itemName[PIPELINE_ITEM_NAME_LENGTH];
-			ed::PipelineItem::ItemType itemType = ed::PipelineItem::ItemType::Geometry;
+			PipelineItem::ItemType itemType = PipelineItem::ItemType::Geometry;
 			void* itemData = nullptr;
 
 			strcpy(itemName, itemNode.attribute("name").as_string());
@@ -1400,7 +1400,7 @@ namespace ed {
 			if (strcmp(itemNode.attribute("type").as_string(), "geometry") == 0) {
 				itemType = ed::PipelineItem::ItemType::Geometry;
 				itemData = new pipe::GeometryItem;
-				pipe::GeometryItem* tData = (pipe::GeometryItem*)itemData;
+				auto* tData = static_cast<pipe::GeometryItem*>(itemData);
 
 				tData->Scale = glm::vec3(1, 1, 1);
 				tData->Position = glm::vec3(0, 0, 0);
@@ -1454,7 +1454,7 @@ namespace ed {
 				itemType = ed::PipelineItem::ItemType::RenderState;
 				itemData = new pipe::RenderState;
 
-				pipe::RenderState* tData = (pipe::RenderState*)itemData;
+				auto* tData = static_cast<pipe::RenderState*>(itemData);
 
 				for (pugi::xml_node attrNode : itemNode.children()) {
 					// rasterizer
@@ -1533,7 +1533,7 @@ namespace ed {
 				itemType = ed::PipelineItem::ItemType::Model;
 				itemData = new pipe::Model;
 
-				pipe::Model* mdata = (pipe::Model*)itemData;
+				auto* mdata = static_cast<pipe::Model*>(itemData);
 
 				mdata->OnlyGroup = false;
 				mdata->Scale = glm::vec3(1, 1, 1);
@@ -1646,7 +1646,7 @@ namespace ed {
 
 			// create and modify if needed
 			if (itemType == ed::PipelineItem::ItemType::Geometry) {
-				ed::pipe::GeometryItem* tData = reinterpret_cast<ed::pipe::GeometryItem*>(itemData);
+				auto tData = static_cast<ed::pipe::GeometryItem*>(itemData);
 				if (tData->Type == pipe::GeometryItem::Cube)
 					tData->VAO = eng::GeometryFactory::CreateCube(tData->VBO, tData->Size.x, tData->Size.y, tData->Size.z, inpLayout);
 				else if (tData->Type == pipe::GeometryItem::Circle)
@@ -1662,13 +1662,12 @@ namespace ed {
 				else if (tData->Type == pipe::GeometryItem::ScreenQuadNDC)
 					tData->VAO = eng::GeometryFactory::CreateScreenQuadNDC(tData->VBO, inpLayout);
 			} else if (itemType == ed::PipelineItem::ItemType::Model) {
-				pipe::Model* tData = reinterpret_cast<pipe::Model*>(itemData);
+				auto tData = static_cast<pipe::Model*>(itemData);
 
 				// std::string objMem = LoadProjectFile(tData->Filename);
 				eng::Model* ptrObject = LoadModel(tData->Filename);
-				bool loaded = ptrObject != nullptr;
 
-				if (loaded)
+				if (ptrObject != nullptr)
 					tData->Data = ptrObject;
 				else
 					m_msgs->Add(ed::MessageStack::Type::Error, name, "Failed to load .obj model " + std::string(itemName));
@@ -1697,7 +1696,7 @@ namespace ed {
 		for (pugi::xml_node passNode : projectNode.child("pipeline").children("pass")) {
 			char name[PIPELINE_ITEM_NAME_LENGTH];
 			ed::PipelineItem::ItemType type = ed::PipelineItem::ItemType::ShaderPass;
-			ed::pipe::ShaderPass* data = new ed::pipe::ShaderPass();
+			auto* data = new ed::pipe::ShaderPass();
 
 			data->InputLayout = gl::CreateDefaultInputLayout();
 
@@ -1710,10 +1709,8 @@ namespace ed {
 				strcpy(name, passNode.attribute("name").as_string());
 
 			// check if it should be collapsed
-			if (!passNode.attribute("collapsed").empty()) {
-				bool cs = passNode.attribute("collapsed").as_bool();
-				if (cs)
-					((PipelineUI*)m_ui->Get(ViewID::Pipeline))->Collapse(data);
+			if (!passNode.attribute("collapsed").empty() && passNode.attribute("collapsed").as_bool()) {
+				dynamic_cast<PipelineUI*>(m_ui->Get(ViewID::Pipeline))->Collapse(data);
 			}
 
 			// get render textures
@@ -1723,7 +1720,7 @@ namespace ed {
 				fbos[data].push_back(rtName);
 				rtCur++;
 			}
-			data->RTCount = (rtCur == 0) ? 1 : rtCur;
+			data->RTCount = (rtCur == 0) ? 1 : static_cast<GLbyte>(rtCur);
 
 			// add the item
 			m_pipe->AddShaderPass(name, data);
@@ -1763,17 +1760,17 @@ namespace ed {
 
 					if (!variableNode.attribute("type").empty()) {
 						const char* myType = variableNode.attribute("type").as_string();
-						for (int i = 0; i < HARRAYSIZE(VARIABLE_TYPE_NAMES); i++)
+						for (int i = 0; i < std::size(VARIABLE_TYPE_NAMES); i++)
 							if (strcmp(myType, VARIABLE_TYPE_NAMES[i]) == 0) {
-								type = (ed::ShaderVariable::ValueType)i;
+								type = static_cast<ed::ShaderVariable::ValueType>(i);
 								break;
 							}
 					}
 					if (!variableNode.attribute("system").empty()) {
 						const char* mySystem = variableNode.attribute("system").as_string();
-						for (int i = 0; i < HARRAYSIZE(SYSTEM_VARIABLE_NAMES); i++)
+						for (int i = 0; i < std::size(SYSTEM_VARIABLE_NAMES); i++)
 							if (strcmp(mySystem, SYSTEM_VARIABLE_NAMES[i]) == 0) {
-								system = (ed::SystemShaderVariable)i;
+								system = static_cast<ed::SystemShaderVariable>(i);
 								break;
 							}
 						if (SystemVariableManager::GetType(system) != type)
@@ -1781,16 +1778,16 @@ namespace ed {
 					}
 					if (!variableNode.attribute("function").empty()) {
 						const char* myFunc = variableNode.attribute("function").as_string();
-						for (int i = 0; i < HARRAYSIZE(FUNCTION_NAMES); i++)
+						for (int i = 0; i < std::size(FUNCTION_NAMES); i++)
 							if (strcmp(myFunc, FUNCTION_NAMES[i]) == 0) {
-								func = (FunctionShaderVariable)i;
+								func = static_cast<FunctionShaderVariable>(i);
 								break;
 							}
 						if (system != SystemShaderVariable::None || !FunctionVariableManager::HasValidReturnType(type, func))
 							func = FunctionShaderVariable::None;
 					}
 
-					ShaderVariable* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
+					auto* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
 					FunctionVariableManager::AllocateArgumentSpace(var, func);
 
 					// parse value
@@ -1813,7 +1810,7 @@ namespace ed {
 				if (strcmp(itemNode.attribute("type").as_string(), "geometry") == 0) {
 					itemType = ed::PipelineItem::ItemType::Geometry;
 					itemData = new pipe::GeometryItem;
-					pipe::GeometryItem* tData = (pipe::GeometryItem*)itemData;
+					auto* tData = static_cast<pipe::GeometryItem*>(itemData);
 
 					tData->Scale = glm::vec3(1, 1, 1);
 					tData->Position = glm::vec3(0, 0, 0);
@@ -1848,11 +1845,11 @@ namespace ed {
 						else if (strcmp(attrNode.name(), "z") == 0)
 							tData->Position.z = attrNode.text().as_float();
 						else if (strcmp(attrNode.name(), "topology") == 0) {
-							for (int k = 0; k < HARRAYSIZE(TOPOLOGY_ITEM_NAMES); k++)
+							for (int k = 0; k < std::size(TOPOLOGY_ITEM_NAMES); k++)
 								if (strcmp(attrNode.text().as_string(), TOPOLOGY_ITEM_NAMES[k]) == 0)
 									tData->Topology = TOPOLOGY_ITEM_VALUES[k];
 						} else if (strcmp(attrNode.name(), "type") == 0) {
-							for (int k = 0; k < HARRAYSIZE(GEOMETRY_NAMES); k++)
+							for (int k = 0; k < std::size(GEOMETRY_NAMES); k++)
 								if (strcmp(attrNode.text().as_string(), GEOMETRY_NAMES[k]) == 0)
 									tData->Type = (pipe::GeometryItem::GeometryType)k;
 						}
@@ -1861,7 +1858,7 @@ namespace ed {
 					itemType = ed::PipelineItem::ItemType::RenderState;
 					itemData = new pipe::RenderState();
 
-					pipe::RenderState* tData = (pipe::RenderState*)itemData;
+					auto tData = static_cast<pipe::RenderState*>(itemData);
 					glm::vec4 blendFactor(0, 0, 0, 0);
 
 					tData->Blend = true;
@@ -1894,7 +1891,7 @@ namespace ed {
 					itemType = ed::PipelineItem::ItemType::RenderState;
 					itemData = new pipe::RenderState;
 
-					pipe::RenderState* tData = (pipe::RenderState*)itemData;
+					auto tData = static_cast<pipe::RenderState*>(itemData);
 
 					tData->StencilMask = 0xFF;
 
@@ -1924,7 +1921,7 @@ namespace ed {
 					itemType = ed::PipelineItem::ItemType::RenderState;
 					itemData = new pipe::RenderState;
 
-					pipe::RenderState* tData = (pipe::RenderState*)itemData;
+					auto* tData = static_cast<pipe::RenderState*>(itemData);
 
 					for (pugi::xml_node attrNode : itemNode.children()) {
 						if (strcmp(attrNode.name(), "wireframe") == 0)
@@ -1947,7 +1944,7 @@ namespace ed {
 					itemType = ed::PipelineItem::ItemType::Model;
 					itemData = new pipe::Model;
 
-					pipe::Model* mdata = (pipe::Model*)itemData;
+					auto mdata = static_cast<pipe::Model*>(itemData);
 
 					mdata->OnlyGroup = false;
 					mdata->Scale = glm::vec3(1, 1, 1);
@@ -1990,7 +1987,7 @@ namespace ed {
 
 				// create and modify if needed
 				if (itemType == ed::PipelineItem::ItemType::Geometry) {
-					ed::pipe::GeometryItem* tData = reinterpret_cast<ed::pipe::GeometryItem*>(itemData);
+					auto* tData = static_cast<ed::pipe::GeometryItem*>(itemData);
 
 					if (tData->Type == pipe::GeometryItem::Cube)
 						tData->VAO = eng::GeometryFactory::CreateCube(tData->VBO, tData->Size.x, tData->Size.y, tData->Size.z, data->InputLayout);
@@ -2007,13 +2004,12 @@ namespace ed {
 					else if (tData->Type == pipe::GeometryItem::ScreenQuadNDC)
 						tData->VAO = eng::GeometryFactory::CreateScreenQuadNDC(tData->VBO, data->InputLayout);
 				} else if (itemType == ed::PipelineItem::ItemType::Model) {
-					pipe::Model* tData = reinterpret_cast<pipe::Model*>(itemData);
+					auto* tData = static_cast<pipe::Model*>(itemData);
 
 					// std::string objMem = LoadProjectFile(tData->Filename);
 					eng::Model* ptrObject = LoadModel(tData->Filename);
-					bool loaded = ptrObject != nullptr;
 
-					if (loaded)
+					if (ptrObject != nullptr)
 						tData->Data = ptrObject;
 					else
 						m_msgs->Add(ed::MessageStack::Type::Error, name, "Failed to load .obj model " + std::string(itemName));
@@ -2230,7 +2226,7 @@ namespace ed {
 							editor->Open(item, ShaderStage::TessellationEvaluation);
 					}
 				} else if (type == "pinned") {
-					PinnedUI* pinned = ((PinnedUI*)m_ui->Get(ViewID::Pinned));
+					auto pinned = static_cast<PinnedUI*>(m_ui->Get(ViewID::Pinned));
 					if (!settingItem.attribute("name").empty()) {
 						const pugi::char_t* item = settingItem.attribute("name").as_string();
 						const pugi::char_t* shaderType = settingItem.attribute("from").as_string();
@@ -2255,7 +2251,7 @@ namespace ed {
 					bool fp = Settings::Instance().Project.FPCamera;
 
 					if (fp) {
-						ed::FirstPersonCamera* fpCam = (ed::FirstPersonCamera*)SystemVariableManager::Instance().GetCamera();
+						auto* fpCam = static_cast<ed::FirstPersonCamera*>(SystemVariableManager::Instance().GetCamera());
 						fpCam->Reset();
 						fpCam->SetPosition(std::stof(settingItem.child("positionX").text().get()),
 							std::stof(settingItem.child("positionY").text().get()),
@@ -2263,7 +2259,7 @@ namespace ed {
 						fpCam->SetYaw(std::stof(settingItem.child("yaw").text().get()));
 						fpCam->SetPitch(std::stof(settingItem.child("pitch").text().get()));
 					} else {
-						ed::ArcBallCamera* ab = (ed::ArcBallCamera*)SystemVariableManager::Instance().GetCamera();
+						auto* ab = static_cast<ed::ArcBallCamera*>(SystemVariableManager::Instance().GetCamera());
 						ab->SetDistance(std::stof(settingItem.child("distance").text().get()));
 						ab->SetYaw(std::stof(settingItem.child("rotationX").text().get()));
 						ab->SetPitch(std::stof(settingItem.child("rotationY").text().get()));
@@ -2272,13 +2268,13 @@ namespace ed {
 
 				} else if (type == "clearcolor") {
 					if (!settingItem.attribute("r").empty())
-						Settings::Instance().Project.ClearColor.r = settingItem.attribute("r").as_uint() / 255.0f;
+						Settings::Instance().Project.ClearColor.r = static_cast<float>(settingItem.attribute("r").as_uint()) / 255.0f;
 					if (!settingItem.attribute("g").empty())
-						Settings::Instance().Project.ClearColor.g = settingItem.attribute("g").as_uint() / 255.0f;
+						Settings::Instance().Project.ClearColor.g = static_cast<float>(settingItem.attribute("g").as_uint()) / 255.0f;
 					if (!settingItem.attribute("b").empty())
-						Settings::Instance().Project.ClearColor.b = settingItem.attribute("b").as_uint() / 255.0f;
+						Settings::Instance().Project.ClearColor.b = static_cast<float>(settingItem.attribute("b").as_uint()) / 255.0f;
 					if (!settingItem.attribute("a").empty())
-						Settings::Instance().Project.ClearColor.a = settingItem.attribute("a").as_uint() / 255.0f;
+						Settings::Instance().Project.ClearColor.a = static_cast<float>(settingItem.attribute("a").as_uint()) / 255.0f;
 				}
 			}
 		}
@@ -2315,18 +2311,18 @@ namespace ed {
 			if (!passNode.attribute("name").empty())
 				strcpy(name, passNode.attribute("name").as_string());
 
-			ed::PipelineItem::ItemType type = ed::PipelineItem::ItemType::ShaderPass;
+			auto type = PipelineItem::ItemType::ShaderPass;
 			if (!passNode.attribute("type").empty()) {
 				if (strcmp(passNode.attribute("type").as_string(), "compute") == 0)
-					type = ed::PipelineItem::ItemType::ComputePass;
+					type = PipelineItem::ItemType::ComputePass;
 				else if (strcmp(passNode.attribute("type").as_string(), "audio") == 0)
-					type = ed::PipelineItem::ItemType::AudioPass;
+					type = PipelineItem::ItemType::AudioPass;
 				else if (strcmp(passNode.attribute("type").as_string(), "plugin") == 0)
-					type = ed::PipelineItem::ItemType::PluginItem;
+					type = PipelineItem::ItemType::PluginItem;
 			}
 
 			if (type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* data = new ed::pipe::ShaderPass();
+				auto* data = new ed::pipe::ShaderPass();
 
 				data->RenderTextures[0] = m_renderer->GetTexture();
 				for (int i = 1; i < MAX_RENDER_TEXTURES; i++)
@@ -2337,10 +2333,8 @@ namespace ed {
 					data->Active = passNode.attribute("active").as_bool();
 
 				// check if it should be collapsed
-				if (!passNode.attribute("collapsed").empty()) {
-					bool cs = passNode.attribute("collapsed").as_bool();
-					if (cs)
-						((PipelineUI*)m_ui->Get(ViewID::Pipeline))->Collapse(data);
+				if (!passNode.attribute("collapsed").empty() && passNode.attribute("collapsed").as_bool()) {
+					dynamic_cast<PipelineUI*>(m_ui->Get(ViewID::Pipeline))->Collapse(data);
 				}
 
 				// patch vertex count
@@ -2409,8 +2403,8 @@ namespace ed {
 					ShaderVariable::ValueType type = ShaderVariable::ValueType::Float1;
 					SystemShaderVariable system = SystemShaderVariable::None;
 					FunctionShaderVariable func = FunctionShaderVariable::None;
-					PluginSystemVariableData pluginSysData;
-					PluginFunctionData pluginFuncData;
+					PluginSystemVariableData pluginSysData{};
+					PluginFunctionData pluginFuncData{};
 
 					char flags = 0;
 
@@ -2422,22 +2416,22 @@ namespace ed {
 					if (!variableNode.attribute("lastframe").empty())
 						isLastFrame = variableNode.attribute("lastframe").as_bool();
 
-					flags = (isInvert * (char)ShaderVariable::Flag::Inverse) | (isLastFrame * (char)ShaderVariable::Flag::LastFrame);
+					flags = static_cast<char>((isInvert * static_cast<char>(ShaderVariable::Flag::Inverse)) | (isLastFrame * static_cast<char>(ShaderVariable::Flag::LastFrame)));
 
 					/* TYPE */
 					if (!variableNode.attribute("type").empty()) {
 						const char* myType = variableNode.attribute("type").as_string();
-						for (int i = 0; i < HARRAYSIZE(VARIABLE_TYPE_NAMES); i++)
+						for (int i = 0; i < std::size(VARIABLE_TYPE_NAMES); i++)
 							if (strcmp(myType, VARIABLE_TYPE_NAMES[i]) == 0) {
-								type = (ed::ShaderVariable::ValueType)i;
+								type = static_cast<ed::ShaderVariable::ValueType>(i);
 								break;
 							}
 					}
 					if (!variableNode.attribute("system").empty()) {
 						const char* mySystem = variableNode.attribute("system").as_string();
-						for (int i = 0; i < HARRAYSIZE(SYSTEM_VARIABLE_NAMES); i++)
+						for (int i = 0; i < std::size(SYSTEM_VARIABLE_NAMES); i++)
 							if (strcmp(mySystem, SYSTEM_VARIABLE_NAMES[i]) == 0) {
-								system = (ed::SystemShaderVariable)i;
+								system = static_cast<ed::SystemShaderVariable>(i);
 								break;
 							}
 						if (system == SystemShaderVariable::PluginVariable) {
@@ -2450,9 +2444,9 @@ namespace ed {
 					}
 					if (!variableNode.attribute("function").empty()) {
 						const char* myFunc = variableNode.attribute("function").as_string();
-						for (int i = 0; i < HARRAYSIZE(FUNCTION_NAMES); i++)
+						for (int i = 0; i < std::size(FUNCTION_NAMES); i++)
 							if (strcmp(myFunc, FUNCTION_NAMES[i]) == 0) {
-								func = (FunctionShaderVariable)i;
+								func = static_cast<FunctionShaderVariable>(i);
 								break;
 							}
 						if (func == FunctionShaderVariable::PluginFunction) {
@@ -2466,7 +2460,7 @@ namespace ed {
 						}
 					}
 
-					ShaderVariable* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
+					auto* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
 					var->Flags = flags;
 					memcpy(&var->PluginSystemVarData, &pluginSysData, sizeof(PluginSystemVariableData));
 					memcpy(&var->PluginFuncData, &pluginFuncData, sizeof(PluginFunctionData));
@@ -2491,19 +2485,19 @@ namespace ed {
 						strcpy(ITEM_SEMANTIC_NAME, lItemNode.attribute("semantic").as_string());
 
 					InputLayoutValue lValue = InputLayoutValue::Position;
-					for (int k = 0; k < (int)InputLayoutValue::MaxCount; k++)
+					for (int k = 0; k < static_cast<int>(InputLayoutValue::MaxCount); k++)
 						if (strcmp(ITEM_VALUE_NAME, ATTRIBUTE_VALUE_NAMES[k]) == 0)
 							lValue = (InputLayoutValue)k;
 
 					data->InputLayout.push_back({ lValue, std::string(ITEM_SEMANTIC_NAME) });
 				}
 
-				if (data->InputLayout.size() == 0)
+				if (data->InputLayout.empty())
 					data->InputLayout = gl::CreateDefaultInputLayout();
 
 				// macros
 				for (pugi::xml_node macroNode : passNode.child("macros").children("define")) {
-					ShaderMacro newMacro;
+					ShaderMacro newMacro{};
 					if (!macroNode.attribute("name").empty())
 						strcpy(newMacro.Name, macroNode.attribute("name").as_string());
 
@@ -2548,7 +2542,7 @@ namespace ed {
 					}
 				}
 			} else if (type == PipelineItem::ItemType::ComputePass) {
-				ed::pipe::ComputePass* data = new ed::pipe::ComputePass();
+				auto* data = new ed::pipe::ComputePass();
 
 				data->Active = true;
 				if (!passNode.attribute("active").empty())
@@ -2583,22 +2577,22 @@ namespace ed {
 					if (!variableNode.attribute("lastframe").empty())
 						isLastFrame = variableNode.attribute("lastframe").as_bool();
 
-					flags = (isInvert * (char)ShaderVariable::Flag::Inverse) | (isLastFrame * (char)ShaderVariable::Flag::LastFrame);
+					flags = static_cast<char>((isInvert * static_cast<char>(ShaderVariable::Flag::Inverse)) | (isLastFrame * static_cast<char>(ShaderVariable::Flag::LastFrame)));
 
 					/* TYPE */
 					if (!variableNode.attribute("type").empty()) {
 						const char* myType = variableNode.attribute("type").as_string();
-						for (int i = 0; i < HARRAYSIZE(VARIABLE_TYPE_NAMES); i++)
+						for (int i = 0; i < std::size(VARIABLE_TYPE_NAMES); i++)
 							if (strcmp(myType, VARIABLE_TYPE_NAMES[i]) == 0) {
-								type = (ed::ShaderVariable::ValueType)i;
+								type = static_cast<ed::ShaderVariable::ValueType>(i);
 								break;
 							}
 					}
 					if (!variableNode.attribute("system").empty()) {
 						const char* mySystem = variableNode.attribute("system").as_string();
-						for (int i = 0; i < HARRAYSIZE(SYSTEM_VARIABLE_NAMES); i++)
+						for (int i = 0; i < std::size(SYSTEM_VARIABLE_NAMES); i++)
 							if (strcmp(mySystem, SYSTEM_VARIABLE_NAMES[i]) == 0) {
-								system = (ed::SystemShaderVariable)i;
+								system = static_cast<ed::SystemShaderVariable>(i);
 								break;
 							}
 						if (SystemVariableManager::GetType(system) != type)
@@ -2606,16 +2600,16 @@ namespace ed {
 					}
 					if (!variableNode.attribute("function").empty()) {
 						const char* myFunc = variableNode.attribute("function").as_string();
-						for (int i = 0; i < HARRAYSIZE(FUNCTION_NAMES); i++)
+						for (int i = 0; i < std::size(FUNCTION_NAMES); i++)
 							if (strcmp(myFunc, FUNCTION_NAMES[i]) == 0) {
-								func = (FunctionShaderVariable)i;
+								func = static_cast<FunctionShaderVariable>(i);
 								break;
 							}
 						if (system != SystemShaderVariable::None || !FunctionVariableManager::HasValidReturnType(type, func))
 							func = FunctionShaderVariable::None;
 					}
 
-					ShaderVariable* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
+					auto* var = new ShaderVariable(type, variableNode.attribute("name").as_string(), system);
 					var->Flags = flags;
 					FunctionVariableManager::AllocateArgumentSpace(var, func);
 
@@ -2628,7 +2622,7 @@ namespace ed {
 
 				// macros
 				for (pugi::xml_node macroNode : passNode.child("macros").children("define")) {
-					ShaderMacro newMacro;
+					ShaderMacro newMacro{};
 					if (!macroNode.attribute("name").empty())
 						strcpy(newMacro.Name, macroNode.attribute("name").as_string());
 
@@ -2657,7 +2651,7 @@ namespace ed {
 				// add the item
 				m_pipe->AddComputePass(name, data);
 			} else if (type == PipelineItem::ItemType::AudioPass) {
-				ed::pipe::AudioPass* data = new ed::pipe::AudioPass();
+				auto* data = new ed::pipe::AudioPass();
 
 				// get shader properties (NOTE: a shader must have TYPE, PATH and ENTRY)
 				for (pugi::xml_node shaderNode : passNode.children("shader")) {
@@ -2686,7 +2680,7 @@ namespace ed {
 					if (!variableNode.attribute("lastframe").empty())
 						isLastFrame = variableNode.attribute("lastframe").as_bool();
 
-					flags = (isInvert * (char)ShaderVariable::Flag::Inverse) | (isLastFrame * (char)ShaderVariable::Flag::LastFrame);
+					flags = static_cast<char>((isInvert * static_cast<char>(ShaderVariable::Flag::Inverse)) | (isLastFrame * static_cast<char>(ShaderVariable::Flag::LastFrame)));
 
 					/* TYPE */
 					if (!variableNode.attribute("type").empty()) {
@@ -2731,7 +2725,7 @@ namespace ed {
 
 				// macros
 				for (pugi::xml_node macroNode : passNode.child("macros").children("define")) {
-					ShaderMacro newMacro;
+					ShaderMacro newMacro{};
 					if (!macroNode.attribute("name").empty())
 						strcpy(newMacro.Name, macroNode.attribute("name").as_string());
 
@@ -2759,7 +2753,7 @@ namespace ed {
 
 		// camera snapshots
 		for (pugi::xml_node camNode : projectNode.child("cameras").children("camera")) {
-			std::string camName = "";
+			std::string camName;
 			glm::mat4 camMat(1);
 
 			if (!camNode.attribute("name").empty())
@@ -2852,7 +2846,7 @@ namespace ed {
 						// min filter
 						if (!objectNode.attribute("min_filter").empty()) {
 							auto filterName = objectNode.attribute("min_filter").as_string();
-							for (int i = 0; i < HARRAYSIZE(TEXTURE_MIN_FILTER_VALUES); i++)
+							for (int i = 0; i < std::size(TEXTURE_MIN_FILTER_VALUES); i++)
 								if (strcmp(filterName, TEXTURE_MIN_FILTER_NAMES[i]) == 0) {
 									itemData->Texture_MinFilter = TEXTURE_MIN_FILTER_VALUES[i];
 									break;
@@ -2862,7 +2856,7 @@ namespace ed {
 						// mag filter
 						if (!objectNode.attribute("mag_filter").empty()) {
 							auto filterName = objectNode.attribute("mag_filter").as_string();
-							for (int i = 0; i < HARRAYSIZE(TEXTURE_MAG_FILTER_VALUES); i++)
+							for (int i = 0; i < std::size(TEXTURE_MAG_FILTER_VALUES); i++)
 								if (strcmp(filterName, TEXTURE_MAG_FILTER_NAMES[i]) == 0) {
 									itemData->Texture_MagFilter = TEXTURE_MAG_FILTER_VALUES[i];
 									break;
@@ -2872,7 +2866,7 @@ namespace ed {
 						// wrap x
 						if (!objectNode.attribute("wrap_s").empty()) {
 							auto filterName = objectNode.attribute("wrap_s").as_string();
-							for (int i = 0; i < HARRAYSIZE(TEXTURE_WRAP_VALUES); i++)
+							for (int i = 0; i < std::size(TEXTURE_WRAP_VALUES); i++)
 								if (strcmp(filterName, TEXTURE_WRAP_NAMES[i]) == 0) {
 									itemData->Texture_WrapS = TEXTURE_WRAP_VALUES[i];
 									break;
@@ -2882,7 +2876,7 @@ namespace ed {
 						// wrap y
 						if (!objectNode.attribute("wrap_t").empty()) {
 							auto filterName = objectNode.attribute("wrap_t").as_string();
-							for (int i = 0; i < HARRAYSIZE(TEXTURE_WRAP_VALUES); i++)
+							for (int i = 0; i < std::size(TEXTURE_WRAP_VALUES); i++)
 								if (strcmp(filterName, TEXTURE_WRAP_NAMES[i]) == 0) {
 									itemData->Texture_WrapT = TEXTURE_WRAP_VALUES[i];
 									break;
@@ -2893,7 +2887,7 @@ namespace ed {
 							// wrap z
 							if (!objectNode.attribute("wrap_r").empty()) {
 								auto filterName = objectNode.attribute("wrap_r").as_string();
-								for (int i = 0; i < HARRAYSIZE(TEXTURE_WRAP_VALUES); i++)
+								for (int i = 0; i < std::size(TEXTURE_WRAP_VALUES); i++)
 									if (strcmp(filterName, TEXTURE_WRAP_NAMES[i]) == 0) {
 										itemData->Texture_WrapT = TEXTURE_WRAP_VALUES[i];
 										break;
@@ -2915,7 +2909,7 @@ namespace ed {
 				// load format
 				if (!objectNode.attribute("format").empty()) {
 					auto formatName = objectNode.attribute("format").as_string();
-					for (int i = 0; i < HARRAYSIZE(FORMAT_NAMES); i++) {
+					for (int i = 0; i < std::size(FORMAT_NAMES); i++) {
 						if (strcmp(formatName, FORMAT_NAMES[i]) == 0) {
 							rt->Format = FORMAT_VALUES[i];
 							break;
@@ -3205,7 +3199,7 @@ namespace ed {
 			gl::CreateVAO(geo.first->VAO, geo.first->VBO, geo.second.second->InputLayout, 0, bojb->ID, m_objects->ParseBufferFormat(bojb->ViewFormat));
 		}
 		for (auto& mdl : modelUBOs) {
-			if (mdl.second.first.size() > 0) {
+			if (!mdl.second.first.empty()) {
 				BufferObject* bobj = m_objects->Get(mdl.second.first)->Buffer;
 				mdl.first->InstanceBuffer = bobj;
 
@@ -3250,7 +3244,7 @@ namespace ed {
 			if (!settingItem.attribute("type").empty()) {
 				std::string type = settingItem.attribute("type").as_string();
 				if (type == "property") {
-					PropertyUI* props = ((PropertyUI*)m_ui->Get(ViewID::Properties));
+					auto* props = static_cast<PropertyUI*>(m_ui->Get(ViewID::Properties));
 					if (!settingItem.attribute("name").empty()) {
 						int type = 0; // pipeline item
 						if (!settingItem.attribute("item").empty()) {
@@ -3271,22 +3265,22 @@ namespace ed {
 						}
 					}
 				} else if (type == "file" && Settings::Instance().General.ReopenShaders) {
-					CodeEditorUI* editor = ((CodeEditorUI*)m_ui->Get(ViewID::Code));
+					auto editor = static_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code));
 					if (!settingItem.attribute("name").empty()) {
 						PipelineItem* item = m_pipe->Get(settingItem.attribute("name").as_string());
 						const pugi::char_t* shaderType = settingItem.attribute("shader").as_string();
 
 						if (item->Type == PipelineItem::ItemType::ShaderPass) {
-							std::string path = ((ed::pipe::ShaderPass*)item->Data)->VSPath;
+							std::string path = static_cast<ed::pipe::ShaderPass*>(item->Data)->VSPath;
 
 							if (strcmp(shaderType, "ps") == 0)
-								path = ((ed::pipe::ShaderPass*)item->Data)->PSPath;
+								path = static_cast<ed::pipe::ShaderPass*>(item->Data)->PSPath;
 							else if (strcmp(shaderType, "gs") == 0)
-								path = ((ed::pipe::ShaderPass*)item->Data)->GSPath;
+								path = static_cast<ed::pipe::ShaderPass*>(item->Data)->GSPath;
 							else if (strcmp(shaderType, "tcs") == 0)
-								path = ((ed::pipe::ShaderPass*)item->Data)->TCSPath;
+								path = static_cast<ed::pipe::ShaderPass*>(item->Data)->TCSPath;
 							else if (strcmp(shaderType, "tes") == 0)
-								path = ((ed::pipe::ShaderPass*)item->Data)->TESPath;
+								path = static_cast<ed::pipe::ShaderPass*>(item->Data)->TESPath;
 
 							if (strcmp(shaderType, "vs") == 0 && FileExists(path))
 								editor->Open(item, ShaderStage::Vertex);
@@ -3299,12 +3293,12 @@ namespace ed {
 							else if (strcmp(shaderType, "tes") == 0 && FileExists(path))
 								editor->Open(item, ShaderStage::TessellationEvaluation);
 						} else if (item->Type == PipelineItem::ItemType::ComputePass) {
-							std::string path = ((ed::pipe::ComputePass*)item->Data)->Path;
+							std::string path = static_cast<ed::pipe::ComputePass*>(item->Data)->Path;
 
 							if (strcmp(shaderType, "cs") == 0 && FileExists(path))
 								editor->Open(item, ShaderStage::Compute);
 						} else if (item->Type == PipelineItem::ItemType::AudioPass) {
-							std::string path = ((ed::pipe::AudioPass*)item->Data)->Path;
+							std::string path = static_cast<ed::pipe::AudioPass*>(item->Data)->Path;
 							editor->Open(item, ShaderStage::Pixel);
 						}
 					}
@@ -3313,17 +3307,16 @@ namespace ed {
 					if (!settingItem.attribute("name").empty()) {
 						const pugi::char_t* item = settingItem.attribute("name").as_string();
 						const pugi::char_t* shaderType = settingItem.attribute("from").as_string();
-						PipelineItem* owner = (PipelineItem*)(m_pipe->Get(settingItem.attribute("owner").as_string()));
 
-						if (owner) {
+						if (PipelineItem* owner = m_pipe->Get(settingItem.attribute("owner").as_string())) {
 							std::vector<ShaderVariable*> vars;
 
 							if (owner->Type == PipelineItem::ItemType::ShaderPass)
-								vars = ((pipe::ShaderPass*)owner->Data)->Variables.GetVariables();
+								vars = static_cast<pipe::ShaderPass*>(owner->Data)->Variables.GetVariables();
 							else if (owner->Type == PipelineItem::ItemType::ComputePass)
-								vars = ((pipe::ComputePass*)owner->Data)->Variables.GetVariables();
+								vars = static_cast<pipe::ComputePass*>(owner->Data)->Variables.GetVariables();
 							else if (owner->Type == PipelineItem::ItemType::AudioPass)
-								vars = ((pipe::AudioPass*)owner->Data)->Variables.GetVariables();
+								vars = static_cast<pipe::AudioPass*>(owner->Data)->Variables.GetVariables();
 
 							for (const auto& var : vars)
 								if (strcmp(var->Name, item) == 0) {
@@ -3343,7 +3336,7 @@ namespace ed {
 					bool fp = Settings::Instance().Project.FPCamera;
 
 					if (fp) {
-						ed::FirstPersonCamera* fpCam = (ed::FirstPersonCamera*)SystemVariableManager::Instance().GetCamera();
+						auto* fpCam = dynamic_cast<ed::FirstPersonCamera*>(SystemVariableManager::Instance().GetCamera());
 						fpCam->Reset();
 						fpCam->SetPosition(std::stof(settingItem.child("positionX").text().get()),
 							std::stof(settingItem.child("positionY").text().get()),
@@ -3351,7 +3344,7 @@ namespace ed {
 						fpCam->SetYaw(std::stof(settingItem.child("yaw").text().get()));
 						fpCam->SetPitch(std::stof(settingItem.child("pitch").text().get()));
 					} else {
-						ed::ArcBallCamera* ab = (ed::ArcBallCamera*)SystemVariableManager::Instance().GetCamera();
+						auto* ab = dynamic_cast<ed::ArcBallCamera*>(SystemVariableManager::Instance().GetCamera());
 						ab->SetDistance(std::stof(settingItem.child("distance").text().get()));
 						ab->SetYaw(std::stof(settingItem.child("yaw").text().get()));
 						ab->SetPitch(std::stof(settingItem.child("pitch").text().get()));
@@ -3398,13 +3391,11 @@ namespace ed {
 
 		// plugin additional data
 		for (pugi::xml_node pluginDataEntry : projectNode.child("plugindata").children("entry")) {
-			std::string plName = "";
+			std::string plName;
 			if (!pluginDataEntry.attribute("owner").empty())
 				plName = pluginDataEntry.attribute("owner").as_string();
 
-			IPlugin1* pl = m_plugins->GetPlugin(plName.c_str());
-
-			if (pl) {
+			if (IPlugin1* pl = m_plugins->GetPlugin(plName)) {
 				const auto& plName = m_plugins->GetPluginName(pl);
 				if (std::count(m_pluginList.begin(), m_pluginList.end(), plName) == 0)
 					m_pluginList.push_back(plName);
@@ -3420,7 +3411,7 @@ namespace ed {
 			for (auto& rtName : pass.second) {
 				ObjectManagerItem* rtOwner = m_objects->Get(rtName);
 
-				GLuint rtID = (rtName.size() == 0) ? m_renderer->GetTexture() : rtOwner->Texture;
+				GLuint rtID = rtName.empty() ? m_renderer->GetTexture() : rtOwner->Texture;
 				pass.first->RenderTextures[index] = rtID;
 				index++;
 			}

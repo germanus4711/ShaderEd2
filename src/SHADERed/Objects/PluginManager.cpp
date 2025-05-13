@@ -92,10 +92,10 @@ namespace ed {
 				}
 
 				// global functions
-				GetPluginAPIVersionFn fnGetPluginAPIVersion = (GetPluginAPIVersionFn)dlsym(procDLL, "GetPluginAPIVersion");
-				GetPluginVersionFn fnGetPluginVersion = (GetPluginVersionFn)dlsym(procDLL, "GetPluginVersion");
-				CreatePluginFn fnCreatePlugin = (CreatePluginFn)dlsym(procDLL, "CreatePlugin");
-				GetPluginNameFn fnGetPluginName = (GetPluginNameFn)dlsym(procDLL, "GetPluginName");
+				auto fnGetPluginAPIVersion = (GetPluginAPIVersionFn)dlsym(procDLL, "GetPluginAPIVersion");
+				auto fnGetPluginVersion = (GetPluginVersionFn)dlsym(procDLL, "GetPluginVersion");
+				auto fnCreatePlugin = (CreatePluginFn)dlsym(procDLL, "CreatePlugin");
+				auto fnGetPluginName = (GetPluginNameFn)dlsym(procDLL, "GetPluginName");
 #else
 				HINSTANCE procDLL = LoadLibraryA(std::string("./plugins/" + pdir + "/plugin.dll").c_str());
 
@@ -115,7 +115,7 @@ namespace ed {
 				// GetPluginName() function
 				if (!fnGetPluginName) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " doesn't contain GetPluginName.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 				std::string pname = (*fnGetPluginName)();
@@ -123,21 +123,21 @@ namespace ed {
 
 				// check if this plugin should be loaded
 				if (std::count(notLoaded.begin(), notLoaded.end(), pname) > 0) {
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 
 				// GetPluginAPIVersion()
 				if (!fnGetPluginAPIVersion) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " doesn't contain GetPluginAPIVersion.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 
 				int apiVer = (*fnGetPluginAPIVersion)();
 				if (apiVer != CURRENT_PLUGINAPI_VERSION) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " uses newer/older plugin API version. Please update the plugin or update SHADERed.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					if (std::count(notLoaded.begin(), notLoaded.end(), pname) == 0)
 						m_incompatible.push_back(pname);
 					continue;
@@ -148,7 +148,7 @@ namespace ed {
 				// GetPluginVersion() function
 				if (!fnGetPluginVersion) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " doesn't contain GetPluginVersion.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 
@@ -157,7 +157,7 @@ namespace ed {
 				// CreatePlugin() function
 				if (!fnCreatePlugin) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " doesn't contain CreatePlugin.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 
@@ -165,7 +165,7 @@ namespace ed {
 				IPlugin1* plugin = (*fnCreatePlugin)();
 				if (plugin == nullptr) {
 					ed::Logger::Get().Log(pdir + "/plugin." + pluginExt + " CreatePlugin returned nullptr.", true);
-					(*ptrFreeLibrary)(procDLL);
+					(ptrFreeLibrary)(procDLL);
 					continue;
 				}
 
@@ -177,8 +177,8 @@ namespace ed {
 		// check if plugins listed in not loaded even exist
 		for (int i = 0; i < notLoaded.size(); i++) {
 			bool exists = false;
-			for (int j = 0; j < allNames.size(); j++) {
-				if (notLoaded[i] == allNames[j]) {
+			for (const auto & allName : allNames) {
+				if (notLoaded[i] == allName) {
 					exists = true;
 					break;
 				}
@@ -195,7 +195,7 @@ namespace ed {
 
 		std::ofstream ini(settingsFileLoc);
 
-		for (int i = m_plugins.size() - 1; i >= 0; i--) {
+		for (int i = static_cast<int>(m_plugins.size()) - 1; i >= 0; i--) {
 			Logger::Get().Log("Destroying \"" + m_names[i] + "\" plugin.");
 
 			int optc = m_plugins[i]->Options_GetCount();
@@ -211,8 +211,7 @@ namespace ed {
 
 			m_plugins[i]->Destroy();
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-			DestroyPluginFn fnDestroyPlugin = (DestroyPluginFn)dlsym(m_proc[i], "DestroyPlugin");
-			if (fnDestroyPlugin)
+			if (auto fnDestroyPlugin = (DestroyPluginFn)dlsym(m_proc[i], "DestroyPlugin"))
 				(*fnDestroyPlugin)(m_plugins[i]);
 
 			dlclose(m_proc[i]);
@@ -230,19 +229,19 @@ namespace ed {
 	}
 	void PluginManager::Update(float delta)
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			m_plugins[i]->Update(delta);
+		for (auto & m_plugin : m_plugins)
+			m_plugin->Update(delta);
 	}
 
 	void PluginManager::BeginRender()
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			m_plugins[i]->BeginRender();
+		for (auto & m_plugin : m_plugins)
+			m_plugin->BeginRender();
 	}
 	void PluginManager::EndRender()
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			m_plugins[i]->EndRender();
+		for (auto & m_plugin : m_plugins)
+			m_plugin->EndRender();
 	}
 
 	std::vector<InputLayoutItem> PluginManager::BuildInputLayout(IPlugin1* plugin, const char* type, void* pldata)
@@ -250,11 +249,11 @@ namespace ed {
 		int size = plugin->PipelineItem_GetInputLayoutSize(type, pldata);
 		std::vector<InputLayoutItem> inpLayout;
 		for (int j = 0; j < size; j++) {
-			plugin::InputLayoutItem inpOut;
+			plugin::InputLayoutItem inpOut{};
 			plugin->PipelineItem_GetInputLayoutItem(type, pldata, j, inpOut);
 
 			InputLayoutItem inp;
-			inp.Value = (InputLayoutValue)inpOut.Value;
+			inp.Value = static_cast<InputLayoutValue>(inpOut.Value);
 			inp.Semantic = std::string(inpOut.Semantic);
 
 			inpLayout.push_back(inp);
@@ -266,22 +265,22 @@ namespace ed {
 	void PluginManager::RegisterPlugin(IPlugin1* plugin, const std::string pname, int apiVer, int pluginVer, void* procDLL)
 	{
 		// set up pointers to app functions
-		plugin->ObjectManager = (void*)&m_data->Objects;
-		plugin->PipelineManager = (void*)&m_data->Pipeline;
-		plugin->Renderer = (void*)&m_data->Renderer;
-		plugin->Messages = (void*)&m_data->Messages;
-		plugin->Project = (void*)&m_data->Parser;
-		plugin->Debugger = (void*)&m_data->Debugger;
-		plugin->UI = (void*)m_ui;
-		plugin->Plugins = (void*)this;
+		plugin->ObjectManager = static_cast<void*>(&m_data->Objects);
+		plugin->PipelineManager = static_cast<void*>(&m_data->Pipeline);
+		plugin->Renderer = static_cast<void*>(&m_data->Renderer);
+		plugin->Messages = static_cast<void*>(&m_data->Messages);
+		plugin->Project = static_cast<void*>(&m_data->Parser);
+		plugin->Debugger = static_cast<void*>(&m_data->Debugger);
+		plugin->UI = static_cast<void*>(m_ui);
+		plugin->Plugins = static_cast<void*>(this);
 
 		plugin->AddObject = [](void* objectManager, const char* name, const char* type, void* data, unsigned int id, void* owner) {
-			ObjectManager* objm = (ObjectManager*)objectManager;
+			auto* objm = static_cast<ObjectManager*>(objectManager);
 			objm->CreatePluginItem(name, type, data, id, (IPlugin1*)owner);
 		};
 		plugin->AddCustomPipelineItem = [](void* pipeManager, void* parentPtr, const char* name, const char* type, void* data, void* owner) -> bool {
-			PipelineManager* pipe = (PipelineManager*)pipeManager;
-			PipelineItem* parent = (PipelineItem*)parentPtr;
+			auto* pipe = static_cast<PipelineManager*>(pipeManager);
+			auto* parent = static_cast<PipelineItem*>(parentPtr);
 			char* parentName = nullptr;
 
 			if (parent != nullptr)
@@ -290,114 +289,114 @@ namespace ed {
 			return pipe->AddPluginItem(parentName, name, type, data, (IPlugin1*)owner);
 		};
 		plugin->AddMessage = [](void* messages, plugin::MessageType mtype, const char* group, const char* txt, int ln) {
-			MessageStack* msgs = (MessageStack*)messages;
-			std::string groupStr = "";
+			auto* msgs = static_cast<MessageStack*>(messages);
+			std::string groupStr;
 			if (group != nullptr)
 				groupStr = std::string(group);
-			msgs->Add((MessageStack::Type)mtype, groupStr, txt, ln);
+			msgs->Add(static_cast<MessageStack::Type>(mtype), groupStr, txt, ln);
 		};
 		plugin->CreateRenderTexture = [](void* objects, const char* name) -> bool {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			return objs->CreateRenderTexture(name);
 		};
 		plugin->CreateImage = [](void* objects, const char* name, int width, int height) -> bool {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			return objs->CreateImage(name, glm::ivec2(width, height));
 		};
 		plugin->ResizeRenderTexture = [](void* objects, const char* name, int width, int height) {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			objs->ResizeRenderTexture(objs->Get(name), glm::ivec2(width, height));
 		};
 		plugin->ResizeImage = [](void* objects, const char* name, int width, int height) {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			objs->ResizeImage(objs->Get(name), glm::ivec2(width, height));
 		};
 		plugin->ExistsObject = [](void* objects, const char* name) -> bool {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			return objs->Exists(name);
 		};
 		plugin->RemoveGlobalObject = [](void* objects, const char* name) {
-			ObjectManager* objs = (ObjectManager*)objects;
+			auto* objs = static_cast<ObjectManager*>(objects);
 			objs->Remove(name);
 		};
 		plugin->GetProjectPath = [](void* project, const char* filename, char* out) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			std::string path = proj->GetProjectPath(filename);
 			strcpy(out, path.c_str());
 		};
 		plugin->GetRelativePath = [](void* project, const char* filename, char* out) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			std::string path = proj->GetRelativePath(filename);
 			strcpy(out, path.c_str());
 		};
 		plugin->GetProjectFilename = [](void* project, char* out) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			std::string path = proj->GetOpenedFile();
 			strcpy(out, path.c_str());
 		};
 		plugin->GetProjectDirectory = [](void* project) -> const char* {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			return proj->GetProjectDirectory().c_str();
 		};
 		plugin->IsProjectModified = [](void* project) -> bool {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			return proj->IsProjectModified();
 		};
 		plugin->ModifyProject = [](void* project) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			proj->ModifyProject();
 		};
 		plugin->OpenProject = [](void* uiData, const char* filename) {
-			GUIManager* ui = (GUIManager*)uiData;
+			auto* ui = static_cast<GUIManager*>(uiData);
 			ui->Open(filename);
 		};
 		plugin->SaveProject = [](void* project) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			proj->Save();
 		};
 		plugin->SaveAsProject = [](void* project, const char* filename, bool copyFiles) {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			proj->SaveAs(filename, copyFiles);
 		};
 		plugin->IsPaused = [](void* renderer) -> bool {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			return rend->IsPaused();
 		};
 		plugin->Pause = [](void* renderer, bool state) {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			rend->Pause(state);
 		};
 		plugin->GetWindowColorTexture = [](void* renderer) -> unsigned int {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			return rend->GetTexture();
 		};
 		plugin->GetWindowDepthTexture = [](void* renderer) -> unsigned int {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			return rend->GetDepthTexture();
 		};
 		plugin->GetLastRenderSize = [](void* renderer, int& w, int& h) {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			glm::ivec2 sz = rend->GetLastRenderSize();
 			w = sz.x;
 			h = sz.y;
 		};
 		plugin->Render = [](void* renderer, int w, int h) {
-			RenderEngine* rend = (RenderEngine*)renderer;
+			auto* rend = static_cast<RenderEngine*>(renderer);
 			rend->Render(w, h);
 		};
 		plugin->ExistsPipelineItem = [](void* pipeline, const char* name) -> bool {
-			PipelineManager* pipe = (PipelineManager*)pipeline;
+			auto* pipe = static_cast<PipelineManager*>(pipeline);
 			return pipe->Has(name);
 		};
 		plugin->GetPipelineItem = [](void* pipeline, const char* name) -> void* {
-			PipelineManager* pipe = (PipelineManager*)pipeline;
+			auto* pipe = static_cast<PipelineManager*>(pipeline);
 			return (void*)pipe->Get(name);
 		};
 		plugin->BindShaderPassVariables = [](void* shaderpass, void* item) {
-			PipelineItem* pitem = (PipelineItem*)shaderpass;
+			auto* pitem = static_cast<PipelineItem*>(shaderpass);
 
 			if (pitem != nullptr && pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
 				pass->Variables.Bind(item);
 			}
 		};
@@ -427,7 +426,7 @@ namespace ed {
 			y = mpos.y;
 		};
 		plugin->GetFrameIndex = []() -> int {
-			return SystemVariableManager::Instance().GetFrameIndex();
+			return static_cast<int>(SystemVariableManager::Instance().GetFrameIndex());
 		};
 		plugin->GetTime = []() -> float {
 			return SystemVariableManager::Instance().GetTime();
@@ -437,7 +436,7 @@ namespace ed {
 			SystemVariableManager::Instance().AdvanceTimer(time - curTime);
 		};
 		plugin->SetGeometryTransform = [](void* item, float scale[3], float rota[3], float pos[3]) {
-			SystemVariableManager::Instance().SetGeometryTransform((PipelineItem*)item, glm::make_vec3(scale), glm::make_vec3(rota), glm::make_vec3(pos));
+			SystemVariableManager::Instance().SetGeometryTransform(static_cast<PipelineItem*>(item), glm::make_vec3(scale), glm::make_vec3(rota), glm::make_vec3(pos));
 		};
 		plugin->SetMousePosition = [](float x, float y) {
 			SystemVariableManager::Instance().SetMousePosition(x, y);
@@ -452,11 +451,11 @@ namespace ed {
 			return Settings::Instance().DPIScale;
 		};
 		plugin->FileExists = [](void* project, const char* filename) -> bool {
-			ProjectParser* proj = (ProjectParser*)project;
+			auto* proj = static_cast<ProjectParser*>(project);
 			return proj->FileExists(filename);
 		};
 		plugin->ClearMessageGroup = [](void* project, const char* group) {
-			MessageStack* msgs = (MessageStack*)project;
+			auto* msgs = static_cast<MessageStack*>(project);
 			msgs->ClearGroup(group);
 		};
 		plugin->Log = [](const char* msg, bool error, const char* file, int line) {
@@ -464,27 +463,27 @@ namespace ed {
 			// ed::Logger::Get().Log(msg, error, file, line);
 		};
 		plugin->GetObjectCount = [](void* objects) -> int {
-			ObjectManager* obj = (ObjectManager*)objects;
-			return obj->GetObjects().size();
+			auto* obj = static_cast<ObjectManager*>(objects);
+			return static_cast<int>(obj->GetObjects().size());
 		};
 		plugin->GetObjectName = [](void* objects, int index) -> const char* {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			return obj->GetObjects()[index]->Name.c_str();
 		};
 		plugin->IsTexture = [](void* objects, const char* name) -> bool {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			return obj->Get(name)->Type == ObjectType::Texture;
 		};
 		plugin->GetTexture = [](void* objects, const char* name) -> unsigned int {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			return obj->Get(name)->Texture;
 		};
 		plugin->GetFlippedTexture = [](void* objects, const char* name) -> unsigned int {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			return obj->Get(name)->FlippedTexture;
 		};
 		plugin->GetTextureSize = [](void* objects, const char* name, int& w, int& h) {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			glm::ivec2 tsize = obj->Get(name)->TextureSize;
 			w = tsize.x;
 			h = tsize.y;
@@ -493,18 +492,18 @@ namespace ed {
 			DefaultState::Bind();
 		};
 		plugin->OpenInCodeEditor = [](void* ui, void* item, const char* filename, int id) {
-			CodeEditorUI* editor = (CodeEditorUI*)((GUIManager*)ui)->Get(ViewID::Code);
-			editor->OpenPluginCode((PipelineItem*)item, filename, id);
+			auto* editor = dynamic_cast<CodeEditorUI*>(static_cast<GUIManager*>(ui)->Get(ViewID::Code));
+			editor->OpenPluginCode(static_cast<PipelineItem*>(item), filename, id);
 		};
 		plugin->GetPipelineItemCount = [](void* pipeline) -> int {
-			PipelineManager* pipe = (PipelineManager*)pipeline;
-			return pipe->GetList().size();
+			auto* pipe = static_cast<PipelineManager*>(pipeline);
+			return static_cast<int>(pipe->GetList().size());
 		};
 		plugin->GetPipelineItemType = [](void* item) -> plugin::PipelineItemType {
-			return (plugin::PipelineItemType)((PipelineItem*)item)->Type;
+			return static_cast<plugin::PipelineItemType>(static_cast<PipelineItem*>(item)->Type);
 		};
 		plugin->GetPipelineItemByIndex = [](void* pipeline, int index) -> void* {
-			PipelineManager* pipe = (PipelineManager*)pipeline;
+			auto* pipe = static_cast<PipelineManager*>(pipeline);
 			return (void*)pipe->GetList()[index];
 		};
 		plugin->DEPRECATED_GetOpenDirectoryDialog = [](char* out) -> bool {
@@ -517,40 +516,40 @@ namespace ed {
 			return false;
 		};
 		plugin->GetIncludePathCount = []() -> int {
-			return Settings::Instance().Project.IncludePaths.size();
+			return static_cast<int>(Settings::Instance().Project.IncludePaths.size());
 		};
 		plugin->GetIncludePath = [](void* project, int index) -> const char* {
 			return Settings::Instance().Project.IncludePaths[index].c_str();
 		};
 		plugin->GetMessagesCurrentItem = [](void* messages) -> const char* {
-			return ((ed::MessageStack*)messages)->CurrentItem.c_str();
+			return static_cast<ed::MessageStack*>(messages)->CurrentItem.c_str();
 		};
 		plugin->OnEditorContentChange = nullptr; // will be set by CodeEditorUI
 		plugin->GetPipelineItemSPIRV = [](void* item, plugin::ShaderStage stage, int* len) -> unsigned int* {
-			PipelineItem* pItem = (PipelineItem*)item;
+			auto* pItem = static_cast<PipelineItem*>(item);
 			if (pItem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* data = (pipe::ShaderPass*)pItem->Data;
+				auto* data = static_cast<pipe::ShaderPass*>(pItem->Data);
 
 				if (stage == plugin::ShaderStage::Pixel) {
-					*len = data->PSSPV.size();
+					*len = static_cast<int>(data->PSSPV.size());
 					return data->PSSPV.data();
 				} else if (stage == plugin::ShaderStage::Vertex) {
-					*len = data->VSSPV.size();
+					*len = static_cast<int>(data->VSSPV.size());
 					return data->VSSPV.data();
 				} else if (stage == plugin::ShaderStage::Geometry) {
-					*len = data->GSSPV.size();
+					*len = static_cast<int>(data->GSSPV.size());
 					return data->GSSPV.data();
 				} else if (stage == plugin::ShaderStage::TessellationControl) {
-					*len = data->TCSSPV.size();
+					*len = static_cast<int>(data->TCSSPV.size());
 					return data->TCSSPV.data();
 				} else if (stage == plugin::ShaderStage::TessellationEvaluation) {
-					*len = data->TESSPV.size();
+					*len = static_cast<int>(data->TESSPV.size());
 					return data->TESSPV.data();
 				}
 			} else if (pItem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* data = (pipe::ComputePass*)pItem->Data;
+				auto* data = static_cast<pipe::ComputePass*>(pItem->Data);
 
-				*len = data->SPV.size();
+				*len = static_cast<int>(data->SPV.size());
 				return data->SPV.data();
 			}
 
@@ -679,7 +678,7 @@ namespace ed {
 			return 0.0f;
 		};
 		plugin->GetPreviewUIRect = [](void* ui, float* out) {
-			PreviewUI* preview = (PreviewUI*)(((GUIManager*)ui)->Get(ViewID::Preview));
+			auto* preview = dynamic_cast<PreviewUI*>(static_cast<GUIManager*>(ui)->Get(ViewID::Preview));
 			glm::vec2 pos = preview->GetUIRectPosition();
 			glm::vec2 size = preview->GetUIRectSize();
 			out[0] = pos.x;
@@ -688,115 +687,114 @@ namespace ed {
 			out[3] = size.y;
 		};
 		plugin->GetPlugin = [](void* pluginManager, const char* name) -> void* {
-			return (void*)((PluginManager*)pluginManager)->GetPlugin(name);
+			return (void*)static_cast<PluginManager*>(pluginManager)->GetPlugin(name);
 		};
 		plugin->GetPluginListSize = [](void* pluginManager) -> int {
-			return ((PluginManager*)pluginManager)->Plugins().size();
+			return static_cast<int>(static_cast<PluginManager*>(pluginManager)->Plugins().size());
 		};
 		plugin->GetPluginName = [](void* pluginManager, int index) -> const char* {
-			PluginManager* pl = (PluginManager*)pluginManager;
+			auto* pl = static_cast<PluginManager*>(pluginManager);
 			if (index >= pl->Plugins().size() || index <= 0)
 				return nullptr;
 			return pl->GetPluginName(pl->Plugins()[index]).c_str();
 		};
 		plugin->SendPluginMessage = [](void* pluginManager, void* plugin, const char* receiver, char* msg, int msgLen) {
-			PluginManager* pl = (PluginManager*)pluginManager;
-			IPlugin1* receiverPlugin = pl->GetPlugin(receiver);
+			auto* pl = static_cast<PluginManager*>(pluginManager);
 
-			if (receiverPlugin)
+			if (IPlugin1* receiverPlugin = pl->GetPlugin(receiver))
 				receiverPlugin->HandlePluginMessage(pl->GetPluginName((IPlugin1*)plugin).c_str(), msg, msgLen);
 		};
 		plugin->BroadcastPluginMessage = [](void* pluginManager, void* plugin, char* msg, int msgLen) {
-			PluginManager* pl = (PluginManager*)pluginManager;
+			auto* pl = static_cast<PluginManager*>(pluginManager);
 			const char* myName = pl->GetPluginName((IPlugin1*)plugin).c_str();
 			for (auto& p : pl->Plugins())
 				p->HandlePluginMessage(myName, msg, msgLen);
 		};
 		plugin->ToggleFullscreen = [](void* UI) {
-			SDL_Window* wnd = ((GUIManager*)UI)->GetSDLWindow();
+			SDL_Window* wnd = static_cast<GUIManager*>(UI)->GetSDLWindow();
 			Uint32 wndFlags = SDL_GetWindowFlags(wnd);
 			bool isFullscreen = wndFlags & SDL_WINDOW_FULLSCREEN_DESKTOP;
 			SDL_SetWindowFullscreen(wnd, (!isFullscreen) * SDL_WINDOW_FULLSCREEN_DESKTOP);
 		};
 		plugin->IsFullscreen = [](void* UI) -> bool {
-			SDL_Window* wnd = ((GUIManager*)UI)->GetSDLWindow();
+			SDL_Window* wnd = static_cast<GUIManager*>(UI)->GetSDLWindow();
 			return SDL_GetWindowFlags(wnd) & SDL_WINDOW_FULLSCREEN_DESKTOP;
 		};
 		plugin->TogglePerformanceMode = [](void* UI) {
-			((GUIManager*)UI)->SetPerformanceMode(!((GUIManager*)UI)->IsPerformanceMode());
+			static_cast<GUIManager*>(UI)->SetPerformanceMode(!static_cast<GUIManager*>(UI)->IsPerformanceMode());
 		};
 		plugin->IsInPerformanceMode = [](void* UI) -> bool {
-			return ((GUIManager*)UI)->IsPerformanceMode();
+			return static_cast<GUIManager*>(UI)->IsPerformanceMode();
 		};
 		plugin->GetPipelineItemName = [](void* item) -> const char* {
-			return ((PipelineItem*)item)->Name;
+			return static_cast<PipelineItem*>(item)->Name;
 		};
 		plugin->GetPipelineItemPluginOwner = [](void* item) -> void* {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 			if (pitem->Type == PipelineItem::ItemType::PluginItem)
-				return ((pipe::PluginItemData*)pitem->Data)->Owner;
+				return static_cast<pipe::PluginItemData*>(pitem->Data)->Owner;
 			return nullptr;
 		};
 		plugin->GetPipelineItemVariableCount = [](void* item) -> int {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
-				return pass->Variables.GetVariables().size();
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
+				return static_cast<int>(pass->Variables.GetVariables().size());
 			} else if (pitem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)pitem->Data;
-				return pass->Variables.GetVariables().size();
+				auto* pass = static_cast<pipe::ComputePass*>(pitem->Data);
+				return static_cast<int>(pass->Variables.GetVariables().size());
 			} else if (pitem->Type == PipelineItem::ItemType::AudioPass) {
-				pipe::AudioPass* pass = (pipe::AudioPass*)pitem->Data;
-				return pass->Variables.GetVariables().size();
+				auto* pass = static_cast<pipe::AudioPass*>(pitem->Data);
+				return static_cast<int>(pass->Variables.GetVariables().size());
 			}
 
 			return 0;
 		};
 		plugin->GetPipelineItemVariableName = [](void* item, int index) -> const char* {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Name;
 			} else if (pitem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)pitem->Data;
+				auto* pass = static_cast<pipe::ComputePass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Name;
 			} else if (pitem->Type == PipelineItem::ItemType::AudioPass) {
-				pipe::AudioPass* pass = (pipe::AudioPass*)pitem->Data;
+				auto* pass = static_cast<pipe::AudioPass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Name;
 			}
 
 			return nullptr;
 		};
 		plugin->GetPipelineItemVariableValue = [](void* item, int index) -> char* {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Data;
 			} else if (pitem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)pitem->Data;
+				auto* pass = static_cast<pipe::ComputePass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Data;
 			} else if (pitem->Type == PipelineItem::ItemType::AudioPass) {
-				pipe::AudioPass* pass = (pipe::AudioPass*)pitem->Data;
+				auto* pass = static_cast<pipe::AudioPass*>(pitem->Data);
 				return pass->Variables.GetVariables()[index]->Data;
 			}
 
 			return nullptr;
 		};
 		plugin->GetPipelineItemVariableType = [](void* item, int index) -> plugin::VariableType {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
-				return (plugin::VariableType)pass->Variables.GetVariables()[index]->GetType();
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
+				return static_cast<plugin::VariableType>(pass->Variables.GetVariables()[index]->GetType());
 			} else if (pitem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)pitem->Data;
-				return (plugin::VariableType)pass->Variables.GetVariables()[index]->GetType();
+				auto* pass = static_cast<pipe::ComputePass*>(pitem->Data);
+				return static_cast<plugin::VariableType>(pass->Variables.GetVariables()[index]->GetType());
 			} else if (pitem->Type == PipelineItem::ItemType::AudioPass) {
-				pipe::AudioPass* pass = (pipe::AudioPass*)pitem->Data;
-				return (plugin::VariableType)pass->Variables.GetVariables()[index]->GetType();
+				auto* pass = static_cast<pipe::AudioPass*>(pitem->Data);
+				return static_cast<plugin::VariableType>(pass->Variables.GetVariables()[index]->GetType());
 			}
 
 			return plugin::VariableType::Float1;
@@ -805,135 +803,135 @@ namespace ed {
 			PipelineItem* pitem = ((PipelineItem*)item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
 				if (pass->Variables.ContainsVariable(name)) return false;
-				pass->Variables.AddCopy(ed::ShaderVariable((ed::ShaderVariable::ValueType)type, name));
+				pass->Variables.AddCopy(ed::ShaderVariable(static_cast<ed::ShaderVariable::ValueType>(type), name));
 				return true;
 			} else if (pitem->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)pitem->Data;
+				auto* pass = static_cast<pipe::ComputePass*>(pitem->Data);
 				if (pass->Variables.ContainsVariable(name)) return false;
-				pass->Variables.AddCopy(ed::ShaderVariable((ed::ShaderVariable::ValueType)type, name));
+				pass->Variables.AddCopy(ed::ShaderVariable(static_cast<ed::ShaderVariable::ValueType>(type), name));
 				return true;
 			} else if (pitem->Type == PipelineItem::ItemType::AudioPass) {
-				pipe::AudioPass* pass = (pipe::AudioPass*)pitem->Data;
+				auto* pass = static_cast<pipe::AudioPass*>(pitem->Data);
 				if (pass->Variables.ContainsVariable(name)) return false;
-				pass->Variables.AddCopy(ed::ShaderVariable((ed::ShaderVariable::ValueType)type, name));
+				pass->Variables.AddCopy(ed::ShaderVariable(static_cast<ed::ShaderVariable::ValueType>(type), name));
 				return true;
 			}
 
 			return false;
 		};
 		plugin->GetPipelineItemChildrenCount = [](void* item) -> int {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
-				return pass->Items.size();
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
+				return static_cast<int>(pass->Items.size());
 			} else if (pitem->Type == PipelineItem::ItemType::PluginItem) {
-				pipe::PluginItemData* pass = (pipe::PluginItemData*)pitem->Data;
-				return pass->Items.size();
+				auto* pass = static_cast<pipe::PluginItemData*>(pitem->Data);
+				return static_cast<int>(pass->Items.size());
 			}
 
 			return 0;
 		};
 		plugin->GetPipelineItemChild = [](void* item, int index) -> void* {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)pitem->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(pitem->Data);
 				return pass->Items[index];
 			} else if (pitem->Type == PipelineItem::ItemType::PluginItem) {
-				pipe::PluginItemData* pass = (pipe::PluginItemData*)pitem->Data;
+				auto* pass = static_cast<pipe::PluginItemData*>(pitem->Data);
 				return pass->Items[index];
 			}
 
 			return nullptr;
 		};
 		plugin->SetPipelineItemPosition = [](void* item, float x, float y, float z) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				item->Position = glm::vec3(x, y, z);
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				item->Position = glm::vec3(x, y, z);
 			}
 		};
 		plugin->SetPipelineItemRotation = [](void* item, float x, float y, float z) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				item->Rotation = glm::vec3(x, y, z);
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				item->Rotation = glm::vec3(x, y, z);
 			}
 		};
 		plugin->SetPipelineItemScale = [](void* item, float x, float y, float z) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				item->Scale = glm::vec3(x, y, z);
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				item->Scale = glm::vec3(x, y, z);
 			}
 		};
 		plugin->GetPipelineItemPosition = [](void* item, float* data) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				data[0] = item->Position.x;
 				data[1] = item->Position.y;
 				data[2] = item->Position.z;
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				data[0] = item->Position.x;
 				data[1] = item->Position.y;
 				data[2] = item->Position.z;
 			}
 		};
 		plugin->GetPipelineItemRotation = [](void* item, float* data) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				data[0] = item->Rotation.x;
 				data[1] = item->Rotation.y;
 				data[2] = item->Rotation.z;
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				data[0] = item->Rotation.x;
 				data[1] = item->Rotation.y;
 				data[2] = item->Rotation.z;
 			}
 		};
 		plugin->GetPipelineItemScale = [](void* item, float* data) {
-			PipelineItem* pitem = ((PipelineItem*)item);
+			auto* pitem = static_cast<PipelineItem*>(item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* item = (pipe::GeometryItem*)pitem->Data;
+				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
 				data[0] = item->Scale.x;
 				data[1] = item->Scale.y;
 				data[2] = item->Scale.z;
 			} else if (pitem->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* item = (pipe::Model*)pitem->Data;
+				auto* item = static_cast<pipe::Model*>(pitem->Data);
 				data[0] = item->Scale.x;
 				data[1] = item->Scale.y;
 				data[2] = item->Scale.z;
 			}
 		};
 		plugin->PushNotification = [](void* UI, void* plugin, int id, const char* text, const char* btn) {
-			((GUIManager*)UI)->AddNotification(id, text, btn, [](int id, IPlugin1* pl) { pl->HandleNotification(id); }, (IPlugin1*)plugin);
+			static_cast<GUIManager*>(UI)->AddNotification(id, text, btn, [](int id, IPlugin1* pl) { pl->HandleNotification(id); }, static_cast<IPlugin1*>(plugin));
 		};
 		plugin->DebuggerJump = [](void* Debugger, void* ed, int line) {
-			((ed::DebugInformation*)Debugger)->Jump(line);
-			int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-			((TextEditor*)ed)->SetCurrentLineIndicator(curLine);
+			static_cast<ed::DebugInformation*>(Debugger)->Jump(line);
+			int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerContinue = [](void* Debugger, void* ed) {
 			((ed::DebugInformation*)Debugger)->Continue();
