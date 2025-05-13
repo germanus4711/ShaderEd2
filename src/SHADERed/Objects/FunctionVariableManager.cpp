@@ -1,10 +1,14 @@
+#include "dap/types.h"
+
 #include <SHADERed/Objects/CameraSnapshots.h>
 #include <SHADERed/Objects/DebugInformation.h>
 #include <SHADERed/Objects/FunctionVariableManager.h>
 #include <SHADERed/Objects/SystemVariableManager.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 
 namespace ed {
 	FunctionVariableManager::FunctionVariableManager()
@@ -58,7 +62,7 @@ namespace ed {
 			glm::vec4 dataVal(0.0f);
 
 			if (item->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* geom = (pipe::GeometryItem*)item->Data;
+				auto* geom = static_cast<pipe::GeometryItem*>(item->Data);
 
 				if (strcmp(propName, "Position") == 0)
 					dataVal = glm::vec4(geom->Position, 1.0f);
@@ -76,7 +80,7 @@ namespace ed {
 					}
 				}
 			} else if (item->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* mdl = (pipe::Model*)item->Data;
+				auto* mdl = static_cast<pipe::Model*>(item->Data);
 
 				if (strcmp(propName, "Position") == 0)
 					dataVal = glm::vec4(mdl->Position, 1.0f);
@@ -94,7 +98,7 @@ namespace ed {
 					}
 				}
 			} else if (item->Type == PipelineItem::ItemType::VertexBuffer) {
-				pipe::VertexBuffer* vbuf = (pipe::VertexBuffer*)item->Data;
+				auto* vbuf = static_cast<pipe::VertexBuffer*>(item->Data);
 
 				if (strcmp(propName, "Position") == 0)
 					dataVal = glm::vec4(vbuf->Position, 1.0f);
@@ -324,7 +328,7 @@ namespace ed {
 
 		if (var->Arguments != nullptr) {
 			free(var->Arguments);
-			var->Arguments = (char*)calloc(args, 1);
+			var->Arguments = static_cast<char*>(calloc(args, 1));
 
 			// set default values
 			switch (func) {
@@ -424,8 +428,27 @@ namespace ed {
 			return ret == ShaderVariable::ValueType::Float4 || ret == ShaderVariable::ValueType::Float3;
 		return false;
 	}
+
+	// TODO LoadFloat should actually be using vvvv
+	float GetValueOrDefault(char* data, int index)
+	{
+		// Load the float pointer from the given data and index
+		float* value = FunctionVariableManager::LoadFloat(data, index);
+
+		// Check if the pointer is null
+		if (value == nullptr) {
+			return 0.0f; // Return 0 if the pointer is null
+		}
+
+		// Dereference the pointer and return the value
+		return *value;
+	}
 	float* FunctionVariableManager::LoadFloat(char* data, int index)
 	{
-		return (float*)(data + index * sizeof(float));
+		if (data == nullptr) {
+			std::cerr << "Variable data is nullptr !" << std::endl;
+			return nullptr;
+		}
+		return reinterpret_cast<float*>(data + index * sizeof(float));
 	}
 }

@@ -36,10 +36,10 @@ namespace ed {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ImGui::Begin("##toolbar", 0, window_flags);
+		ImGui::Begin("##toolbar", nullptr, window_flags);
 		ImGui::PopStyleVar(3);
 
-		float bHeight = TOOLBAR_HEIGHT / 2 + ImGui::GetStyle().FramePadding.y * 2;
+		float bHeight = static_cast<float>(TOOLBAR_HEIGHT) / 2 + ImGui::GetStyle().FramePadding.y * 2;
 
 		ImGui::SetCursorPosY(ImGui::GetWindowHeight() / 2 - Settings::Instance().CalculateSize(bHeight) / 2);
 		ImGui::Indent(Settings::Instance().CalculateSize(15));
@@ -59,8 +59,7 @@ namespace ed {
 		if (ImGui::Button(UI_ICON_DOCUMENT_FOLDER)) { // OPEN PROJECT
 			bool cont = true;
 			if (m_data->Parser.IsProjectModified()) {
-				int btnID = this->AreYouSure();
-				if (btnID == 2)
+				if (this->AreYouSure() == 2)
 					cont = false;
 			}
 

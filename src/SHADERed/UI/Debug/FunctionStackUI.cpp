@@ -16,7 +16,7 @@ namespace ed {
 			spvm_result_t func = vm->function_stack_info[i];
 			if (!(spvm_program_get_language(vm->owner) == SpvSourceLanguage::SpvSourceLanguageHLSL && i == 0) && func->name != nullptr) {
 				std::string fname(func->name);
-				if (fname.size() > 0 && fname[0] == '@') // clean up the @main(
+				if (!fname.empty() && fname[0] == '@') // clean up the @main(
 					fname = fname.substr(1);
 				size_t parenth = fname.find('(');
 				if (parenth != std::string::npos)
@@ -39,7 +39,7 @@ namespace ed {
 	}
 	void DebugFunctionStackUI::Update(float delta)
 	{
-		for (int i = 0; i < m_stack.size(); i++)
-			ImGui::Text("%s", m_stack[i].c_str());
+		for (const auto & i : m_stack)
+			ImGui::Text("%s", i.c_str());
 	}
 }

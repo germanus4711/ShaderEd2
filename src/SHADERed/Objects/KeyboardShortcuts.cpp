@@ -1,11 +1,11 @@
 #include <SHADERed/Objects/KeyboardShortcuts.h>
 #include <SHADERed/Objects/Logger.h>
-#include <SHADERed/Objects/Settings.h>
 #include <SHADERed/Objects/Names.h>
+#include <SHADERed/Objects/Settings.h>
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <filesystem>
 
 #include <ImGuiColorTextEdit/TextEditor.h>
 #include <SDL2/SDL_keyboard.h>
@@ -33,7 +33,7 @@ namespace ed {
 		// pre setup Editor shortcuts (TODO: improve this... TextEditor::GetDefaultShortcuts())
 		std::vector<TextEditor::Shortcut> eds = TextEditor::GetDefaultShortcuts();
 		for (int i = 0; i < eds.size(); i++)
-			Set(std::string("Editor." + std::string(EDITOR_SHORTCUT_NAMES[i])).c_str(), eds[i].Key1, eds[i].Key2, eds[i].Alt, eds[i].Ctrl, eds[i].Shift);
+			Set(std::string("Editor." + std::string(EDITOR_SHORTCUT_NAMES[i])), eds[i].Key1, eds[i].Key2, eds[i].Alt, eds[i].Ctrl, eds[i].Shift);
 
 		while (std::getline(file, str)) {
 			std::stringstream ss(str);
@@ -76,7 +76,7 @@ namespace ed {
 
 		for (auto& s : m_data) {
 			if (s.second.Key1 == -1) {
-				//file << " NONE" << std::endl;
+				// file << " NONE" << std::endl;
 				continue;
 			}
 
@@ -96,17 +96,13 @@ namespace ed {
 		}
 
 		ed::Logger::Get().Log("Saved shortcut information");
-
-		return;
 	}
 	std::string KeyboardShortcuts::Exists(const std::string& name, int VK1, int VK2, bool alt, bool ctrl, bool shift)
 	{
 		for (auto& i : m_data)
 			if (name != i.first && i.second.Ctrl == ctrl && i.second.Alt == alt && i.second.Shift == shift && i.second.Key1 == VK1 && (VK2 == -1 || i.second.Key2 == VK2 || i.second.Key2 == -1)) {
-				if (!(name == "CodeUI.Save" && i.first == "Project.Save") && !(name == "Project.Save" && i.first == "CodeUI.Save") &&
-					((name.find("Editor") == std::string::npos && i.first.find("Editor") == std::string::npos) || (name.find("Editor") != std::string::npos && i.first.find("Editor") != std::string::npos && // autocomplete is a "special module" added to the text editor and not actually the text editor
-					(name.find("Autocomplete") == std::string::npos && i.first.find("Autocomplete") == std::string::npos))))
-				{
+				if (!(name == "CodeUI.Save" && i.first == "Project.Save") && !(name == "Project.Save" && i.first == "CodeUI.Save") && ((name.find("Editor") == std::string::npos && i.first.find("Editor") == std::string::npos) || (name.find("Editor") != std::string::npos && i.first.find("Editor") != std::string::npos && // autocomplete is a "special module" added to the text editor and not actually the text editor
+																																		   (name.find("Autocomplete") == std::string::npos && i.first.find("Autocomplete") == std::string::npos)))) {
 					return i.first;
 				}
 			}
@@ -205,7 +201,8 @@ namespace ed {
 						if (s.Plugin != nullptr) {
 							std::string actualName = hotkey.first.substr(hotkey.first.find_first_of('.') + 1);
 							s.Plugin->HandleShortcut(actualName.c_str());
-						} else s.Function();
+						} else
+							s.Function();
 
 						resetSecond = true;
 					}
@@ -217,7 +214,8 @@ namespace ed {
 							if (s.Plugin != nullptr) {
 								std::string actualName = hotkey.first.substr(hotkey.first.find_first_of('.') + 1);
 								s.Plugin->HandleShortcut(actualName.c_str());
-							} else s.Function();
+							} else
+								s.Function();
 
 							resetFirst = resetSecond = true;
 						}

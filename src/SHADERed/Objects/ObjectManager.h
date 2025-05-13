@@ -115,7 +115,7 @@ namespace ed {
 		float m_audioTempTexData[ed::AudioAnalyzer::SampleCount * 2];
 		short m_samplesTempBuffer[1024];
 
-		unsigned char m_kbTexture[256 * 3];
+		unsigned char m_kbTexture[256 * 3]{};
 
 		std::unordered_map<PipelineItem*, std::vector<GLuint>> m_binds;
 		std::unordered_map<PipelineItem*, std::vector<GLuint>> m_uniformBinds;

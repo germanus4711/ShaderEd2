@@ -45,20 +45,20 @@ namespace ed {
 		window->DrawList->PathClear();
 
 		int num_segments = 30;
-		int start = abs(ImSin(g->Time * 1.8f) * (num_segments - 5));
+		int start = static_cast<int>(abs(ImSin(g->Time * 1.8f) * static_cast<float>(num_segments - 5)));
 
-		const float a_min = IM_PI * 2.0f * ((float)start) / (float)num_segments;
-		const float a_max = IM_PI * 2.0f * ((float)num_segments - 3) / (float)num_segments;
+		const float a_min = IM_PI * 2.0f * static_cast<float>(start) / static_cast<float>(num_segments);
+		const float a_max = IM_PI * 2.0f * (static_cast<float>(num_segments) - 3) / static_cast<float>(num_segments);
 
 		const ImVec2 centre = ImVec2(pos.x + radius, pos.y + radius + style.FramePadding.y);
 
 		for (int i = 0; i < num_segments; i++) {
-			const float a = a_min + ((float)i / (float)num_segments) * (a_max - a_min);
+			const float a = a_min + (static_cast<float>(i) / static_cast<float>(num_segments)) * (a_max - a_min);
 			window->DrawList->PathLineTo(ImVec2(centre.x + ImCos(a + g->Time * 8) * radius,
 				centre.y + ImSin(a + g->Time * 8) * radius));
 		}
 
-		window->DrawList->PathStroke(color, false, thickness);
+		window->DrawList->PathStroke(color, false, static_cast<float>(thickness));
 		// missing return added
 		return true;
 	}
@@ -70,13 +70,13 @@ namespace ed {
 			{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 0, "YES" },
 		};
 		const SDL_MessageBoxData messageboxdata = {
-			SDL_MESSAGEBOX_INFORMATION, /* .flags */
-			(SDL_Window*)window,		/* .window */
-			"SHADERed",					/* .title */
-			msg.c_str(),				/* .message */
-			SDL_arraysize(buttons),		/* .numbuttons */
-			buttons,					/* .buttons */
-			NULL						/* .colorScheme */
+			SDL_MESSAGEBOX_INFORMATION,		  /* .flags */
+			static_cast<SDL_Window*>(window),		  /* .window */
+			"SHADERed",						  /* .title */
+			msg.c_str(),					  /* .message */
+			std::size(buttons),			  /* .numbuttons */
+			buttons,								  /* .buttons */
+			nullptr						  /* .colorScheme */
 		};
 		int buttonID;
 		if (SDL_ShowMessageBox(&messageboxdata, &buttonID) < 0) {
@@ -90,13 +90,13 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int op = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(BLEND_OPERATOR_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(BLEND_OPERATOR_VALUES); i++)
 			if (BLEND_OPERATOR_VALUES[i] == opValue)
 				op = i;
 
 		if (ImGui::BeginCombo(name, BLEND_OPERATOR_NAMES[op])) {
-			for (int i = 0; i < HARRAYSIZE(BLEND_OPERATOR_NAMES); i++) {
-				bool is_selected = ((int)op == i);
+			for (int i = 0; i < std::size(BLEND_OPERATOR_NAMES); i++) {
+				bool is_selected = (static_cast<int>(op) == i);
 
 				if (strlen(BLEND_OPERATOR_NAMES[i]) > 1)
 					if (ImGui::Selectable(BLEND_OPERATOR_NAMES[i], is_selected)) {
@@ -117,13 +117,13 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int blend = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(BLEND_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(BLEND_VALUES); i++)
 			if (BLEND_VALUES[i] == blendValue)
 				blend = i;
 
 		if (ImGui::BeginCombo(name, BLEND_NAMES[blend])) {
-			for (int i = 0; i < HARRAYSIZE(BLEND_NAMES); i++) {
-				bool is_selected = ((int)blend == i);
+			for (int i = 0; i < std::size(BLEND_NAMES); i++) {
+				bool is_selected = (static_cast<int>(blend) == i);
 
 				if (strlen(BLEND_NAMES[i]) > 1)
 					if (ImGui::Selectable(BLEND_NAMES[i], is_selected)) {
@@ -144,13 +144,13 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int cull = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(CULL_MODE_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(CULL_MODE_VALUES); i++)
 			if (CULL_MODE_VALUES[i] == cullValue)
 				cull = i;
 
 		if (ImGui::BeginCombo(name, CULL_MODE_NAMES[cull])) {
-			for (int i = 0; i < HARRAYSIZE(CULL_MODE_NAMES); i++) {
-				bool is_selected = ((int)cull == i);
+			for (int i = 0; i < std::size(CULL_MODE_NAMES); i++) {
+				bool is_selected = (static_cast<int>(cull) == i);
 
 				if (strlen(CULL_MODE_NAMES[i]) > 1)
 					if (ImGui::Selectable(CULL_MODE_NAMES[i], is_selected)) {
@@ -171,13 +171,13 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int comp = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(COMPARISON_FUNCTION_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(COMPARISON_FUNCTION_VALUES); i++)
 			if (COMPARISON_FUNCTION_VALUES[i] == compValue)
 				comp = i;
 
 		if (ImGui::BeginCombo(name, COMPARISON_FUNCTION_NAMES[comp])) {
-			for (int i = 0; i < HARRAYSIZE(COMPARISON_FUNCTION_NAMES); i++) {
-				bool is_selected = ((int)comp == i);
+			for (int i = 0; i < std::size(COMPARISON_FUNCTION_NAMES); i++) {
+				bool is_selected = (static_cast<int>(comp) == i);
 
 				if (strlen(COMPARISON_FUNCTION_NAMES[i]) > 1)
 					if (ImGui::Selectable(COMPARISON_FUNCTION_NAMES[i], is_selected)) {
@@ -198,13 +198,13 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int op = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(STENCIL_OPERATION_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(STENCIL_OPERATION_VALUES); i++)
 			if (STENCIL_OPERATION_VALUES[i] == opValue)
 				op = i;
 
 		if (ImGui::BeginCombo(name, STENCIL_OPERATION_NAMES[op])) {
-			for (int i = 0; i < HARRAYSIZE(STENCIL_OPERATION_NAMES); i++) {
-				bool is_selected = ((int)op == i);
+			for (int i = 0; i < std::size(STENCIL_OPERATION_NAMES); i++) {
+				bool is_selected = (static_cast<int>(op) == i);
 
 				if (strlen(STENCIL_OPERATION_NAMES[i]) > 1)
 					if (ImGui::Selectable(STENCIL_OPERATION_NAMES[i], is_selected)) {
@@ -225,78 +225,70 @@ namespace ed {
 	{
 		bool ret = false;
 		unsigned int op = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(TEXTURE_MIN_FILTER_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(TEXTURE_MIN_FILTER_VALUES); i++)
 			if (TEXTURE_MIN_FILTER_VALUES[i] == filter)
 				op = i;
 
 		if (ImGui::BeginCombo(name, TEXTURE_MIN_FILTER_NAMES[op])) {
-			for (int i = 0; i < HARRAYSIZE(TEXTURE_MIN_FILTER_NAMES); i++) {
-				bool is_selected = ((int)op == i);
+			for (int i = 0; i < std::size(TEXTURE_MIN_FILTER_NAMES); i++) {
+				bool is_selected = (static_cast<int>(op) == i);
 
 				if (strlen(TEXTURE_MIN_FILTER_NAMES[i]) > 1)
 					if (ImGui::Selectable(TEXTURE_MIN_FILTER_NAMES[i], is_selected)) {
 						filter = TEXTURE_MIN_FILTER_VALUES[i];
 						ret = true;
 					}
-
 				if (is_selected)
 					ImGui::SetItemDefaultFocus();
 			}
-
 			ImGui::EndCombo();
 		}
-
 		return ret;
 	}
 	bool UIHelper::CreateTextureMagFilterCombo(const char* name, GLenum& filter)
 	{
 		bool ret = false;
 		unsigned int op = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(TEXTURE_MAG_FILTER_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(TEXTURE_MAG_FILTER_VALUES); i++)
 			if (TEXTURE_MAG_FILTER_VALUES[i] == filter)
 				op = i;
 
 		if (ImGui::BeginCombo(name, TEXTURE_MAG_FILTER_NAMES[op])) {
-			for (int i = 0; i < HARRAYSIZE(TEXTURE_MAG_FILTER_NAMES); i++) {
-				bool is_selected = ((int)op == i);
+			for (int i = 0; i < std::size(TEXTURE_MAG_FILTER_NAMES); i++) {
+				bool is_selected = (static_cast<int>(op) == i);
 
 				if (strlen(TEXTURE_MAG_FILTER_NAMES[i]) > 1)
 					if (ImGui::Selectable(TEXTURE_MAG_FILTER_NAMES[i], is_selected)) {
 						filter = TEXTURE_MAG_FILTER_VALUES[i];
 						ret = true;
 					}
-
 				if (is_selected)
 					ImGui::SetItemDefaultFocus();
 			}
-
 			ImGui::EndCombo();
 		}
-
 		return ret;
 	}
 	bool UIHelper::CreateTextureWrapCombo(const char* name, GLenum& mode)
 	{
 		bool ret = false;
 		unsigned int op = 0;
-		for (unsigned int i = 0; i < HARRAYSIZE(TEXTURE_WRAP_VALUES); i++)
+		for (unsigned int i = 0; i < std::size(TEXTURE_WRAP_VALUES); i++)
 			if (TEXTURE_WRAP_VALUES[i] == mode)
 				op = i;
 
 		if (ImGui::BeginCombo(name, TEXTURE_WRAP_NAMES[op])) {
-			for (int i = 0; i < HARRAYSIZE(TEXTURE_WRAP_NAMES); i++) {
-				bool is_selected = ((int)op == i);
+			for (int i = 0; i < std::size(TEXTURE_WRAP_NAMES); i++) {
+				bool is_selected = (static_cast<int>(op) == i);
 
 				if (strlen(TEXTURE_WRAP_NAMES[i]) > 1)
 					if (ImGui::Selectable(TEXTURE_WRAP_NAMES[i], is_selected)) {
 						mode = TEXTURE_WRAP_VALUES[i];
 						ret = true;
 					}
-
 				if (is_selected)
 					ImGui::SetItemDefaultFocus();
 			}
-
 			ImGui::EndCombo();
 		}
 
@@ -311,7 +303,7 @@ namespace ed {
 	}
 	void UIHelper::Markdown(const std::string& md)
 	{
-		static ImGui::MarkdownConfig mdConfig { MarkdownLinkCallback, NULL, "", { { NULL, true }, { NULL, true }, { NULL, false } } };
+		static ImGui::MarkdownConfig mdConfig { MarkdownLinkCallback, nullptr, "", { { nullptr, true }, { nullptr, true }, { nullptr, false } } };
 		ImGui::Markdown(md.c_str(), md.length(), mdConfig);
 	}
 }

@@ -19,6 +19,8 @@ extern "C" {
 namespace ed {
 	ObjectManager::ObjectManager(ProjectParser* parser, RenderEngine* rnd)
 			: m_parser(parser)
+			, m_audioTempTexData {}
+			, m_samplesTempBuffer {}
 			, m_renderer(rnd)
 	{
 		m_binds.clear();
@@ -151,13 +153,13 @@ namespace ed {
 			ddsImage = dds_load_from_file(path.c_str());
 
 			data = ddsImage->pixels;
-			w = ddsImage->header.width;
-			h = ddsImage->header.height;
+			w = static_cast<int>(ddsImage->header.width);
+			h = static_cast<int>(ddsImage->header.height);
 			nrChannels = 4;
 		}
 
 		if (nrChannels != 4) {
-			paddedData = (unsigned char*)malloc(w * h * 4);
+			paddedData = static_cast<unsigned char*>(malloc(w * h * 4));
 			for (int x = 0; x < w; x++) {
 				for (int y = 0; y < h; y++) {
 					if (nrChannels == 3) {
@@ -192,13 +194,13 @@ namespace ed {
 	{
 		Logger::Get().Log("Clearing ObjectManager contents...");
 
-		for (int i = 0; i < m_items.size(); i++) {
-			if (m_items[i]->Plugin != nullptr) {
-				PluginObject* pobj = m_items[i]->Plugin;
-				pobj->Owner->Object_Remove(m_items[i]->Name.c_str(), pobj->Type, pobj->Data, pobj->ID);
+		for (auto& m_item : m_items) {
+			if (m_item->Plugin != nullptr) {
+				PluginObject* pobj = m_item->Plugin;
+				pobj->Owner->Object_Remove(m_item->Name.c_str(), pobj->Type, pobj->Data, pobj->ID);
 			}
 
-			delete m_items[i];
+			delete m_item;
 		}
 
 		m_binds.clear();
@@ -209,14 +211,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating a render texture " + name + " ...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create a render texture " + name + " because a rt with such name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
-
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::RenderTexture);
+		// TODO Memory leaking
+		auto* item = new ObjectManagerItem(name, ObjectType::RenderTexture);
 		m_items.push_back(item);
 
 		ed::RenderTextureObject* rtObj = item->RT = new ed::RenderTextureObject();
@@ -231,7 +233,7 @@ namespace ed {
 		// color texture
 		glGenTextures(1, &item->Texture);
 		glBindTexture(GL_TEXTURE_2D, item->Texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, rtObj->Format, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(rtObj->Format), size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -239,7 +241,7 @@ namespace ed {
 		// depth texture
 		glGenTextures(1, &rtObj->DepthStencilBuffer);
 		glBindTexture(GL_TEXTURE_2D, rtObj->DepthStencilBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, size.x, size.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, size.x, size.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -277,8 +279,8 @@ namespace ed {
 			ddsImage = dds_load_from_file(path.c_str());
 
 			data = ddsImage->pixels;
-			width = ddsImage->header.width;
-			height = ddsImage->header.height;
+			width = static_cast<int>(ddsImage->header.width);
+			height = static_cast<int>(ddsImage->header.height);
 		} else {
 			int nrChannels = 0;
 			stbi_set_flip_vertically_on_load(1);
@@ -292,7 +294,7 @@ namespace ed {
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(file, ObjectType::Texture);
+		auto* item = new ObjectManagerItem(file, ObjectType::Texture);
 		m_items.push_back(item);
 
 		// normal texture
@@ -307,7 +309,7 @@ namespace ed {
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		// flipped texture
-		unsigned char* flippedData = (unsigned char*)malloc(width * height * 4);
+		auto* flippedData = static_cast<unsigned char*>(malloc(width * height * 4));
 
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
@@ -363,17 +365,17 @@ namespace ed {
 
 		glGenTextures(1, &item->Texture);
 		glBindTexture(GL_TEXTURE_3D, item->Texture);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, item->Texture_MinFilter);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, item->Texture_MagFilter);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, item->Texture_WrapS);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, item->Texture_WrapT);
-		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, item->Texture_WrapR);
-		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, ddsImage->header.width, ddsImage->header.height, ddsImage->header.depth, 0, GL_RGBA, GL_UNSIGNED_BYTE, ddsImage->pixels);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(item->Texture_MinFilter));
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(item->Texture_MagFilter));
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, static_cast<GLint>(item->Texture_WrapS));
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, static_cast<GLint>(item->Texture_WrapT));
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, static_cast<GLint>(item->Texture_WrapR));
+		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, static_cast<int>(ddsImage->header.width), static_cast<int>(ddsImage->header.height), static_cast<int>(ddsImage->header.depth), 0, GL_RGBA, GL_UNSIGNED_BYTE, ddsImage->pixels);
 		glGenerateMipmap(GL_TEXTURE_3D);
 		glBindTexture(GL_TEXTURE_3D, 0);
 
 		item->TextureSize = glm::ivec2(ddsImage->header.width, ddsImage->header.height);
-		item->Depth = ddsImage->header.depth;
+		item->Depth = static_cast<int>(ddsImage->header.depth);
 
 		dds_image_free(ddsImage);
 
@@ -443,7 +445,7 @@ namespace ed {
 			return false;
 		}
 
-		ObjectManagerItem* item = new ObjectManagerItem(file, ObjectType::Audio);
+		auto* item = new ObjectManagerItem(file, ObjectType::Audio);
 
 		item->Sound = new eng::AudioPlayer();
 		bool loaded = item->Sound->LoadFromFile(m_parser->GetProjectPath(file));
@@ -474,14 +476,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating a buffer " + name + " ...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create the buffer " + name + " because an item with such name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::Buffer);
+		auto* item = new ObjectManagerItem(name, ObjectType::Buffer);
 		m_items.push_back(item);
 
 		ed::BufferObject* bObj = item->Buffer = new ed::BufferObject();
@@ -503,14 +505,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating an image " + name + " ...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create the image " + name + " because an item with exact name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::Image);
+		auto* item = new ObjectManagerItem(name, ObjectType::Image);
 		m_items.push_back(item);
 
 		ed::ImageObject* iObj = item->Image = new ImageObject();
@@ -532,14 +534,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating an image " + name + " ...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create the image " + name + " because an item with exact name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::Image3D);
+		auto* item = new ObjectManagerItem(name, ObjectType::Image3D);
 		m_items.push_back(item);
 
 		ed::Image3DObject* iObj = item->Image3D = new Image3DObject();
@@ -550,7 +552,7 @@ namespace ed {
 		glBindTexture(GL_TEXTURE_3D, item->Texture);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage3D(GL_TEXTURE_3D, 0, iObj->Format, size.x, size.y, size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage3D(GL_TEXTURE_3D, 0, static_cast<int>(iObj->Format), size.x, size.y, size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 		glBindTexture(GL_TEXTURE_3D, 0);
 
 		return true;
@@ -559,14 +561,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating a plugin object " + name + " of type " + objtype + "...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create the plugin object " + name + " because an item with that name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::PluginObject);
+		auto* item = new ObjectManagerItem(name, ObjectType::PluginObject);
 		m_items.push_back(item);
 
 		PluginObject* pObj = item->Plugin = new PluginObject();
@@ -581,14 +583,14 @@ namespace ed {
 	{
 		Logger::Get().Log("Creating a keyboard texture " + name + " ...");
 
-		if (name.size() == 0 || Exists(name)) {
+		if (name.empty() || Exists(name)) {
 			Logger::Get().Log("Cannot create a keyboard texture " + name + " because an object with that name already exists", true);
 			return false;
 		}
 
 		m_parser->ModifyProject();
 
-		ObjectManagerItem* item = new ObjectManagerItem(name, ObjectType::KeyboardTexture);
+		auto* item = new ObjectManagerItem(name, ObjectType::KeyboardTexture);
 		m_items.push_back(item);
 
 		GLenum fmt = GL_RED;
@@ -690,8 +692,8 @@ namespace ed {
 			ddsImage = dds_load_from_file(path.c_str());
 
 			data = ddsImage->pixels;
-			width = ddsImage->header.width;
-			height = ddsImage->header.height;
+			width = static_cast<int>(ddsImage->header.width);
+			height = static_cast<int>(ddsImage->header.height);
 			nrChannels = 4;
 		}
 
@@ -699,20 +701,20 @@ namespace ed {
 			m_parser->ModifyProject();
 
 			if (convertToFloat) {
-				buf->Size = width * height * nrChannels * sizeof(float);
+				buf->Size = static_cast<int>(width * height * nrChannels * sizeof(float));
 				buf->Data = realloc(buf->Data, buf->Size);
-				float* fData = (float*)buf->Data;
+				auto fData = static_cast<float*>(buf->Data);
 
 				for (int x = 0; x < width; x++) {
 					for (int y = 0; y < height; y++) {
 						for (int z = 0; z < nrChannels; z++) {
 							int index = ((y * width) + x) * nrChannels + z;
-							fData[index] = data[index] / 255.0f;
+							fData[index] = static_cast<float>(data[index]) / 255.0f;
 						}
 					}
 				}
 			} else {
-				buf->Size = width * height * nrChannels * sizeof(char);
+				buf->Size = static_cast<int>(width * height * nrChannels * sizeof(char));
 				buf->Data = realloc(buf->Data, buf->Size);
 				memcpy(buf->Data, data, buf->Size);
 			}
@@ -738,16 +740,16 @@ namespace ed {
 
 		if (ret) {
 			int vertCount = 0;
-			for (auto mesh : mdl.Meshes)
-				vertCount += mesh.Vertices.size();
-			int bufSize = vertCount * 4 * sizeof(float);
+			for (const auto& mesh : mdl.Meshes)
+				vertCount += static_cast<int>(mesh.Vertices.size());
+			int bufSize = static_cast<int>(vertCount * 4 * sizeof(float));
 
 			buf->Size = bufSize;
 			buf->Data = realloc(buf->Data, bufSize);
 
 			int index = 0;
-			float* fData = (float*)buf->Data;
-			for (auto mesh : mdl.Meshes)
+			auto* fData = static_cast<float*>(buf->Data);
+			for (const auto& mesh : mdl.Meshes)
 				for (auto vert : mesh.Vertices) {
 					fData[index + 0] = vert.Position.x;
 					fData[index + 1] = vert.Position.y;
@@ -774,10 +776,10 @@ namespace ed {
 
 		bool ret = bufRead.is_open();
 		if (ret) {
-			buf->Size = bufSize;
+			buf->Size = static_cast<int>(bufSize);
 			buf->Data = realloc(buf->Data, bufSize);
 			char* data = (char*)calloc(1, bufSize);
-			bufRead.read(data, bufSize);
+			bufRead.read(data, static_cast<long>(bufSize));
 			memcpy(buf->Data, data, bufSize);
 			free(data);
 
@@ -810,9 +812,9 @@ namespace ed {
 					ddsImage = dds_load_from_file(path.c_str());
 
 					data = ddsImage->pixels;
-					width = ddsImage->header.width;
-					height = ddsImage->header.height;
-					depth = ddsImage->header.depth;
+					width = static_cast<int>(ddsImage->header.width);
+					height = static_cast<int>(ddsImage->header.height);
+					depth = static_cast<int>(ddsImage->header.depth);
 				}
 
 				if (data == nullptr || (isDDS && ddsImage == nullptr) || (item->Type == ObjectType::Texture3D && depth == 0))
@@ -837,7 +839,7 @@ namespace ed {
 					glBindTexture(GL_TEXTURE_2D, 0);
 
 					// flipped texture
-					unsigned char* flippedData = (unsigned char*)malloc(width * height * 4);
+					auto* flippedData = static_cast<unsigned char*>(malloc(width * height * 4));
 					for (int x = 0; x < width; x++) {
 						for (int y = 0; y < height; y++) {
 							flippedData[(y * width + x) * 4 + 0] = data[((height - y - 1) * width + x) * 4 + 0];
@@ -967,10 +969,10 @@ namespace ed {
 				double* fftData = m_audioAnalyzer.FFT(m_samplesTempBuffer);
 
 				for (int i = 0; i < ed::AudioAnalyzer::SampleCount; i++) {
-					short s = (m_samplesTempBuffer[i * 2] + m_samplesTempBuffer[i * 2 + 1]) / 2;
-					float sf = (float)s / (float)INT16_MAX;
+					auto s = static_cast<short>((m_samplesTempBuffer[i * 2] + m_samplesTempBuffer[i * 2 + 1]) / 2);
+					float sf = static_cast<float>(s) / static_cast<float>(INT16_MAX);
 
-					m_audioTempTexData[i] = fftData[i / 2];
+					m_audioTempTexData[i] = static_cast<float>(fftData[i / 2]);
 					m_audioTempTexData[i + ed::AudioAnalyzer::SampleCount] = sf * 0.5f + 0.5f;
 				}
 
@@ -1147,7 +1149,7 @@ namespace ed {
 
 			bool needsResize = width != texSize.x;
 
-			unsigned char* pixels = (unsigned char*)malloc(texSize.x * texSize.y * 4);
+			auto pixels = static_cast<unsigned char*>(malloc(texSize.x * texSize.y * 4));
 			unsigned char* resPixels = pixels;
 
 			// read pixels
@@ -1155,7 +1157,7 @@ namespace ed {
 			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
 			if (needsResize) {
-				resPixels = (unsigned char*)malloc(width * height * 4);
+				resPixels = static_cast<unsigned char*>(malloc(width * height * 4));
 				for (int y = 0; y < height; y++)
 					memcpy(&resPixels[(height - y - 1) * width * 4], &pixels[(texSize.y - y - 1) * texSize.x * 4], width * 4);
 			}
@@ -1169,7 +1171,7 @@ namespace ed {
 
 			free(pixels);
 		} else {
-			unsigned char* pixels = (unsigned char*)calloc(img->Size.x * img->Size.y, 4);
+			auto* pixels = static_cast<unsigned char*>(calloc(img->Size.x * img->Size.y, 4));
 
 			glBindTexture(GL_TEXTURE_2D, imgTex);
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img->Size.x, img->Size.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -1186,7 +1188,7 @@ namespace ed {
 		else if (item->Type == ObjectType::Image)
 			imgSize = item->Image->Size;
 
-		unsigned char* pixels = (unsigned char*)malloc(imgSize.x * imgSize.y * 4);
+		auto* pixels = static_cast<unsigned char*>(malloc((size_t)(imgSize.x * imgSize.y * 4)));
 
 		GLuint outTex = item->Texture;
 
@@ -1197,44 +1199,45 @@ namespace ed {
 		std::string ext = filepath.substr(filepath.find_last_of('.') + 1);
 
 		if (ext == "jpg" || ext == "jpeg")
-			stbi_write_jpg(filepath.c_str(), imgSize.x, imgSize.y, 4, pixels, 100);
+			stbi_write_jpg(filepath.c_str(), static_cast<int>(imgSize.x), static_cast<int>(imgSize.y), 4, pixels, 100);
 		else if (ext == "bmp")
-			stbi_write_bmp(filepath.c_str(), imgSize.x, imgSize.y, 4, pixels);
+			stbi_write_bmp(filepath.c_str(), static_cast<int>(imgSize.x), static_cast<int>(imgSize.y), 4, pixels);
 		else if (ext == "tga")
-			stbi_write_tga(filepath.c_str(), imgSize.x, imgSize.y, 4, pixels);
+			stbi_write_tga(filepath.c_str(), static_cast<int>(imgSize.x), static_cast<int>(imgSize.y), 4, pixels);
 		else
-			stbi_write_png(filepath.c_str(), imgSize.x, imgSize.y, 4, pixels, imgSize.x * 4);
+			stbi_write_png(filepath.c_str(), static_cast<int>(imgSize.x), static_cast<int>(imgSize.y), 4, pixels, static_cast<int>(imgSize.x) * 4);
 
 		free(pixels);
 	}
 
 	bool ObjectManager::HasKeyboardTexture()
 	{
-		for (const auto& obj : m_items)
-			if (obj->Type == ObjectType::KeyboardTexture)
-				return true;
-		return false;
+		auto isKeyboardTexture = [](const ObjectManagerItem* obj) {
+			return obj->Type == ObjectType::KeyboardTexture;
+		};
+
+		return std::any_of(m_items.begin(), m_items.end(), isKeyboardTexture);
 	}
 
 	ObjectManagerItem* ObjectManager::GetByTextureID(GLuint tex)
 	{
-		for (int i = 0; i < m_items.size(); i++)
-			if (m_items[i]->Texture == tex)
-				return m_items[i];
+		for (auto & m_item : m_items)
+			if (m_item->Texture == tex)
+				return m_item;
 		return nullptr;
 	}
 	ObjectManagerItem* ObjectManager::GetByBufferID(GLuint tex)
 	{
-		for (int i = 0; i < m_items.size(); i++)
-			if (m_items[i]->Buffer && m_items[i]->Buffer->ID == tex)
-				return m_items[i];
+		for (auto & m_item : m_items)
+			if (m_item->Buffer && m_item->Buffer->ID == tex)
+				return m_item;
 		return nullptr;
 	}
 	ObjectManagerItem* ObjectManager::Get(const std::string& name)
 	{
-		for (int i = 0; i < m_items.size(); i++)
-			if (m_items[i]->Name == name)
-				return m_items[i];
+		for (auto & m_item : m_items)
+			if (m_item->Name == name)
+				return m_item;
 		return nullptr;
 	}
 
@@ -1245,13 +1248,13 @@ namespace ed {
 		if (item != nullptr) {
 			GLuint tex = item->Texture;
 			for (auto& key : m_binds)
-				for (int i = 0; i < key.second.size(); i++)
-					if (key.second[i] == tex)
-						key.second[i] = item->FlippedTexture;
+				for (unsigned int & i : key.second)
+					if (i == tex)
+						i = item->FlippedTexture;
 			for (auto& key : m_uniformBinds)
-				for (int i = 0; i < key.second.size(); i++)
-					if (key.second[i] == tex)
-						key.second[i] = item->FlippedTexture;
+				for (unsigned int & i : key.second)
+					if (i == tex)
+						i = item->FlippedTexture;
 
 			item->Texture = item->FlippedTexture;
 			item->FlippedTexture = tex;
@@ -1265,27 +1268,27 @@ namespace ed {
 		if (item != nullptr) {
 			if (item->Type == ed::ObjectType::Texture) {
 				glBindTexture(GL_TEXTURE_2D, item->Texture);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, item->Texture_MinFilter);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, item->Texture_MagFilter);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, item->Texture_WrapS);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, item->Texture_WrapT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<int>(item->Texture_MinFilter));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<int>(item->Texture_MagFilter));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<int>(item->Texture_WrapS));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<int>(item->Texture_WrapT));
 
 				glBindTexture(GL_TEXTURE_2D, item->FlippedTexture);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, item->Texture_MinFilter);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, item->Texture_MagFilter);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, item->Texture_WrapS);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, item->Texture_WrapT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<int>(item->Texture_MinFilter));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<int>(item->Texture_MagFilter));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<int>(item->Texture_WrapS));
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<int>(item->Texture_WrapT));
 
 				glBindTexture(GL_TEXTURE_2D, 0);
 			}
 
 			else if (item->Type == ed::ObjectType::Texture3D) {
 				glBindTexture(GL_TEXTURE_3D, item->Texture);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, item->Texture_MinFilter);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, item->Texture_MagFilter);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, item->Texture_WrapS);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, item->Texture_WrapT);
-				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, item->Texture_WrapR);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, static_cast<int>(item->Texture_MinFilter));
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, static_cast<int>(item->Texture_MagFilter));
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, static_cast<int>(item->Texture_WrapS));
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, static_cast<int>(item->Texture_WrapT));
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, static_cast<int>(item->Texture_WrapR));
 				glBindTexture(GL_TEXTURE_3D, 0);
 			}
 		}
@@ -1293,34 +1296,31 @@ namespace ed {
 
 	void ObjectManager::Mute(ObjectManagerItem* item)
 	{
-		if (item != nullptr) {
-			item->SoundMuted = true;
-			item->Sound->SetVolume(0);
-		}
+		if (item == nullptr) return;
+		item->SoundMuted = true;
+		item->Sound->SetVolume(0);
 	}
 	void ObjectManager::Unmute(ObjectManagerItem* item)
 	{
-		if (item != nullptr) {
-			item->SoundMuted = false;
-			item->Sound->SetVolume(1.0f);
-		}
+		if (item == nullptr) return;
+		item->SoundMuted = false;
+		item->Sound->SetVolume(1.0f);
 	}
 
 	void ObjectManager::ResizeRenderTexture(ObjectManagerItem* item, glm::ivec2 size)
 	{
 		RenderTextureObject* rtObj = item->RT;
 
-		if (rtObj == nullptr)
-			return;
+		if (rtObj == nullptr) return;
 
 		if (rtObj->RatioSize.x == -1 && rtObj->RatioSize.y == -1)
 			m_parser->ModifyProject();
 
 		glBindTexture(GL_TEXTURE_2D, item->Texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, rtObj->Format, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(rtObj->Format), size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 		glBindTexture(GL_TEXTURE_2D, rtObj->DepthStencilBuffer);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, size.x, size.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, size.x, size.y, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, rtObj->BufferMS);
@@ -1339,7 +1339,7 @@ namespace ed {
 		iobj->Size = size;
 
 		glBindTexture(GL_TEXTURE_2D, item->Texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, iobj->Format, iobj->Size.x, iobj->Size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(iobj->Format), iobj->Size.x, iobj->Size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	void ObjectManager::ResizeImage3D(ObjectManagerItem* item, glm::ivec3 size)
@@ -1351,7 +1351,7 @@ namespace ed {
 		iobj->Size = size;
 
 		glBindTexture(GL_TEXTURE_3D, item->Texture);
-		glTexImage3D(GL_TEXTURE_3D, 0, iobj->Format, iobj->Size.x, iobj->Size.y, iobj->Size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+		glTexImage3D(GL_TEXTURE_3D, 0, static_cast<GLint>(iobj->Format), iobj->Size.x, iobj->Size.y, iobj->Size.z, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 		glBindTexture(GL_TEXTURE_3D, 0);
 	}
 }

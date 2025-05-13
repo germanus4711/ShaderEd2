@@ -1,13 +1,13 @@
-#include <SHADERed/Objects/FrameAnalysis.h>
-#include <SHADERed/Objects/Debug/PixelInformation.h>
-#include <SHADERed/Objects/ShaderCompiler.h>
-#include <SHADERed/Objects/Names.h>
-#include <SHADERed/Objects/BinaryVectorReader.h>
 #include <SHADERed/Engine/GeometryFactory.h>
+#include <SHADERed/Objects/BinaryVectorReader.h>
+#include <SHADERed/Objects/Debug/PixelInformation.h>
+#include <SHADERed/Objects/FrameAnalysis.h>
+#include <SHADERed/Objects/Names.h>
+#include <SHADERed/Objects/ShaderCompiler.h>
 
-#include <thread>
 #include <algorithm>
 #include <glm/gtc/type_ptr.hpp>
+#include <thread>
 
 #include <common/BinaryVectorWriter.h>
 #include <spvgentwo/Templates.h>
@@ -15,9 +15,9 @@
 namespace ed {
 	FrameAnalysis::EdgeEquation::EdgeEquation(const glm::ivec2& v0, const glm::ivec2& v1)
 	{
-		a = v0.y - v1.y;
-		b = v1.x - v0.x;
-		c = -(a * (v0.x + v1.x) + b * (v0.y + v1.y)) / 2.0f;
+		a = static_cast<float>(v0.y) - static_cast<float>(v1.y);
+		b = static_cast<float>(v1.x) - static_cast<float>(v0.x);
+		c = -(a * static_cast<float>(v0.x + v1.x) + b * static_cast<float>(v0.y + v1.y)) / 2.0f;
 		tie = a != 0 ? a > 0 : b > 0;
 	}
 	glm::vec3 getHeatmapColor(float value)
@@ -26,15 +26,15 @@ namespace ed {
 		int id1 = 0;
 		int id2 = 0;
 
-		if (value <= 0) 
+		if (value <= 0)
 			id1 = id2 = 0;
 		else if (value >= 1)
 			id1 = id2 = 4;
 		else {
 			value *= 4;
-			id1 = std::floor(value);
+			id1 = static_cast<int>(std::floor(value));
 			id2 = id1 + 1;
-			value -= id1;
+			value -= static_cast<float>(id1);
 		}
 
 		if (id1 < 0 || id1 > 4 || id2 < 0 || id2 > 4)
@@ -78,7 +78,7 @@ namespace ed {
 	{
 		for (auto& pass : m_pipeline->GetList()) {
 			if (pass->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* data = (pipe::ShaderPass*)pass->Data;
+				auto* data = static_cast<pipe::ShaderPass*>(pass->Data);
 				if (strcmp(path, data->PSPath) == 0) {
 					return &data->PSSPV;
 				}
@@ -93,7 +93,7 @@ namespace ed {
 		ExpressionCompiler compiler;
 		compiler.SetSPIRV(*m_getPixelShaderSPV(m_breakpoint[i].PSPath));
 
-		std::string curFunction = "";
+		std::string curFunction;
 		if (m_debugger->GetVM()->current_function != nullptr)
 			curFunction = m_debugger->GetVM()->current_function->name;
 		m_breakpoint[i].ResultID = compiler.Compile(m_breakpoint[i].Breakpoint->Condition, curFunction);
@@ -201,10 +201,10 @@ namespace ed {
 	}
 	void FrameAnalysis::m_cleanBreakpoints()
 	{
-		for (int i = 0; i < m_breakpoint.size(); i++) {
-			if (m_breakpoint[i].SPIRV.size() > 1) {
-				spvm_state_delete(m_breakpoint[i].VM);
-				spvm_program_delete(m_breakpoint[i].Shader);
+		for (auto& i : m_breakpoint) {
+			if (i.SPIRV.size() > 1) {
+				spvm_state_delete(i.VM);
+				spvm_program_delete(i.Shader);
 			}
 		}
 
@@ -233,7 +233,7 @@ namespace ed {
 			free(m_ub);
 			m_ub = nullptr;
 		}
-		
+
 		if (m_bkpt != nullptr) {
 			free(m_bkpt);
 			m_bkpt = nullptr;
@@ -250,7 +250,7 @@ namespace ed {
 			vertex.Color = glm::vec4(vbo[14], vbo[15], vbo[16], vbo[17]);
 		} else {
 			vertex.Position = glm::vec3(vbo[0], vbo[1], 0.0f);
-			vertex.TexCoords = glm::vec2(vbo[2], vbo[3]);			
+			vertex.TexCoords = glm::vec2(vbo[2], vbo[3]);
 		}
 	}
 
@@ -277,7 +277,7 @@ namespace ed {
 								m_cacheBreakpoint(i);
 								m_breakpoint[i].Cached = true;
 							}
-							
+
 							spvm_result_t resultType = nullptr;
 							spvm_result_t result = m_executeBreakpoint(i, resultType);
 							if (result && resultType->value_type == spvm_value_type_bool && result->member_count == 1)
@@ -297,13 +297,13 @@ namespace ed {
 	{
 		m_clean();
 
-		m_depth = (float*)malloc(width * height * sizeof(float));
-		m_color = (uint32_t*)malloc(width * height * sizeof(uint32_t));
-		m_instCount = (uint32_t*)calloc(width * height, sizeof(uint32_t));
-		m_ub = (uint32_t*)calloc(width * height, sizeof(uint32_t));
+		m_depth = static_cast<float*>(malloc(width * height * sizeof(float)));
+		m_color = static_cast<uint32_t*>(malloc(width * height * sizeof(uint32_t)));
+		m_instCount = static_cast<uint32_t*>(calloc(width * height, sizeof(uint32_t)));
+		m_ub = static_cast<uint32_t*>(calloc(width * height, sizeof(uint32_t)));
 
 		if (m_hasBreakpoints)
-			m_bkpt = (uint8_t*)calloc(width * height, sizeof(uint8_t));
+			m_bkpt = static_cast<uint8_t*>(calloc(width * height, sizeof(uint8_t)));
 
 		uint32_t clearColorU32 = m_encodeColor(clearColor);
 
@@ -313,8 +313,8 @@ namespace ed {
 				m_depth[y * width + x] = FLT_MAX;
 			}
 
-		m_width = width;
-		m_height = height;
+		m_width = static_cast<int>(width);
+		m_height = static_cast<int>(height);
 
 		m_instCountAvg = m_instCountAvgN = m_instCountMax = 0;
 		m_pixelCount = m_pixelsDiscarded = m_pixelsUB = m_pixelsFailedDepthTest = 0;
@@ -331,7 +331,7 @@ namespace ed {
 	}
 	void FrameAnalysis::Copy(GLuint tex, int width, int height)
 	{
-		uint8_t* pixels = (uint8_t*)malloc(width * height * 4);
+		auto* pixels = static_cast<uint8_t*>(malloc(width * height * 4));
 
 		glBindTexture(GL_TEXTURE_2D, tex);
 		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -365,7 +365,7 @@ namespace ed {
 			m_breakpoint[i].VM = nullptr;
 			m_breakpoint[i].Shader = nullptr;
 		}
-		m_hasBreakpoints = m_breakpoint.size() > 0;
+		m_hasBreakpoints = !m_breakpoint.empty();
 	}
 
 	void FrameAnalysis::RenderPass(PipelineItem* pass)
@@ -373,7 +373,7 @@ namespace ed {
 		m_pass = pass;
 
 		if (pass->Type == PipelineItem::ItemType::ShaderPass) {
-			pipe::ShaderPass* data = (pipe::ShaderPass*)pass->Data;
+			auto* data = static_cast<pipe::ShaderPass*>(pass->Data);
 
 			m_pixel.GeometryShaderUsed = data->GSUsed;
 			m_pixel.TessellationShaderUsed = data->TSUsed;
@@ -381,14 +381,14 @@ namespace ed {
 			for (PipelineItem* item : data->Items) {
 				// built-in geometry
 				if (item->Type == PipelineItem::ItemType::Geometry) {
-					pipe::GeometryItem* geom = (pipe::GeometryItem*)item->Data;
+					auto* geom = static_cast<pipe::GeometryItem*>(item->Data);
 					const int vCount = ed::eng::GeometryFactory::VertexCount[geom->Type];
 					const int vStride = geom->Type == pipe::GeometryItem::GeometryType::ScreenQuadNDC ? 4 : 18;
-					float* vbo = (float*)malloc(vCount * vStride * sizeof(float));
-					
+					auto vbo = static_cast<float*>(malloc(vCount * vStride * sizeof(float)));
+
 					// get vertex data on the cpu
 					glBindBuffer(GL_ARRAY_BUFFER, geom->VBO); // TODO: don't bother GPU so much
-					glGetBufferSubData(GL_ARRAY_BUFFER, 0, vCount * vStride * sizeof(float), &vbo[0]);
+					glGetBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(vCount * vStride * sizeof(float)), &vbo[0]);
 					glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 					// loop through all vertices
@@ -404,7 +404,7 @@ namespace ed {
 				}
 				// 3D model
 				else if (item->Type == PipelineItem::ItemType::Model) {
-					pipe::Model* mdl = (pipe::Model*)item->Data;
+					auto* mdl = static_cast<pipe::Model*>(item->Data);
 					// get vertex data on the cpu
 					if (mdl->Data) {
 						for (auto& mesh : mdl->Data->Meshes) {
@@ -422,11 +422,11 @@ namespace ed {
 				// vertex buffer
 				else if (item->Type == PipelineItem::ItemType::VertexBuffer) {
 					pipe::VertexBuffer* vBuffer = ((pipe::VertexBuffer*)item->Data);
-					ed::BufferObject* bufData = (ed::BufferObject*)vBuffer->Buffer;
+					auto* bufData = static_cast<ed::BufferObject*>(vBuffer->Buffer);
 
 					// get vertex count
 					int topologySelection = 0;
-					for (; topologySelection < (sizeof(TOPOLOGY_ITEM_VALUES) / sizeof(*TOPOLOGY_ITEM_VALUES)); topologySelection++)
+					for (; topologySelection < std::size(TOPOLOGY_ITEM_VALUES); topologySelection++)
 						if (TOPOLOGY_ITEM_VALUES[topologySelection] == vBuffer->Topology)
 							break;
 					uint8_t vertexCount = TOPOLOGY_SINGLE_VERTEX_COUNT[topologySelection];
@@ -437,7 +437,7 @@ namespace ed {
 					for (const auto& dataEl : tData)
 						stride += ShaderVariable::GetSize(dataEl, true);
 
-					GLfloat* bufPtr = (GLfloat*)malloc(bufData->Size);
+					auto* bufPtr = static_cast<GLfloat*>(malloc(bufData->Size));
 
 					glBindBuffer(GL_ARRAY_BUFFER, bufData->ID);
 					glGetBufferSubData(GL_ARRAY_BUFFER, 0, bufData->Size, &bufPtr[0]);
@@ -450,11 +450,11 @@ namespace ed {
 							for (int j = 0; j < tData.size(); j++) {
 								// TODO: use input layout
 								if (j == 0) /* POSITION */
-									m_pixel.Vertex[i].Position = glm::make_vec3(bufPtr + (p+i) * stride / 4 + iOffset);
+									m_pixel.Vertex[i].Position = glm::make_vec3(bufPtr + (p + i) * stride / 4 + iOffset);
 								else if (j == 1)
-									m_pixel.Vertex[i].Normal = glm::make_vec3(bufPtr + (p+i) * stride / 4 + iOffset);
+									m_pixel.Vertex[i].Normal = glm::make_vec3(bufPtr + (p + i) * stride / 4 + iOffset);
 								else if (j == 2)
-									m_pixel.Vertex[i].TexCoords = glm::make_vec2(bufPtr + (p+i) * stride / 4 + iOffset);
+									m_pixel.Vertex[i].TexCoords = glm::make_vec2(bufPtr + (p + i) * stride / 4 + iOffset);
 
 								iOffset += ShaderVariable::GetSize(tData[j]) / 4;
 							}
@@ -465,7 +465,7 @@ namespace ed {
 					}
 
 					free(bufPtr);
-				} 
+				}
 			}
 		}
 	}
@@ -474,20 +474,20 @@ namespace ed {
 		m_pixel.VertexCount = vertexCount;
 		m_pixel.Pass = m_pass;
 		m_pixel.Object = item;
-		m_pixel.InTopology = topology;
-		m_pixel.OutTopology = topology;
+		m_pixel.InTopology = static_cast<int>(topology);
+		m_pixel.OutTopology = static_cast<int>(topology);
 		m_pixel.InstanceID = 0;
 		m_pixel.RenderTextureSize = m_renderer->GetLastRenderSize();
 		m_pixel.RenderTextureIndex = 0;
-		m_pixel.VertexID = vertexStart;
+		m_pixel.VertexID = static_cast<int>(vertexStart);
 		m_pixel.Fetched = false;
 
 		// run the vertex shader
 		m_debugger->PrepareVertexShader(m_pass, item, &m_pixel);
 		for (unsigned int v = 0; v < vertexCount; v++) {
-			m_debugger->SetVertexShaderInput(m_pixel, v);
+			m_debugger->SetVertexShaderInput(m_pixel, static_cast<int>(v));
 			m_pixel.VertexShaderPosition[v] = m_debugger->ExecuteVertexShader();
-			m_debugger->CopyVertexShaderOutput(m_pixel, v);
+			m_debugger->CopyVertexShaderOutput(m_pixel, static_cast<int>(v));
 		}
 		memcpy(m_pixel.FinalPosition, m_pixel.VertexShaderPosition, sizeof(glm::vec4) * 3);
 
@@ -578,7 +578,7 @@ namespace ed {
 			for (int y = minY; y <= maxY; y += RASTER_BLOCK_SIZE) {
 				// check if block is inside the triangle
 				// inspired by github.com/trenki2/SoftwareRenderer
-				bool btmLeft1 = edge1.Test(x, y), btmLeft2 = edge2.Test(x, y), btmLeft3 = edge3.Test(x, y), btmLeft = btmLeft1 && btmLeft2 && btmLeft3;
+				bool btmLeft1 = edge1.Test(x, y),btmLeft2 = edge2.Test(x, y), btmLeft3 = edge3.Test(x, y), btmLeft = btmLeft1 && btmLeft2 && btmLeft3;
 				bool btmRight1 = edge1.Test(x + RASTER_BLOCK_STEP, y), btmRight2 = edge2.Test(x + RASTER_BLOCK_STEP, y), btmRight3 = edge3.Test(x + RASTER_BLOCK_STEP, y), btmRight = btmRight1 && btmRight2 && btmRight3;
 				bool topLeft1 = edge1.Test(x, y + RASTER_BLOCK_STEP), topLeft2 = edge2.Test(x, y + RASTER_BLOCK_STEP), topLeft3 = edge3.Test(x, y + RASTER_BLOCK_STEP), topLeft = topLeft1 && topLeft2 && topLeft3;
 				bool topRight1 = edge1.Test(x + RASTER_BLOCK_STEP, y + RASTER_BLOCK_STEP), topRight2 = edge2.Test(x + RASTER_BLOCK_STEP, y + RASTER_BLOCK_STEP), topRight3 = edge3.Test(x + RASTER_BLOCK_STEP, y + RASTER_BLOCK_STEP), topRight = topRight1 && topRight2 && topRight3;
@@ -597,15 +597,15 @@ namespace ed {
 
 	float* FrameAnalysis::AllocateHeatmap()
 	{
-		float* tex = (float*)malloc(m_width * m_height * 3 * sizeof(float));
+		auto tex = static_cast<float*>(malloc(m_width * m_height * 3 * sizeof(float)));
 
 		for (int y = 0; y < m_height; y++) {
 			for (int x = 0; x < m_width; x++) {
-				float val = m_instCount[y * m_width + x] / (float)m_instCountMax;
+				float val = static_cast<float>(m_instCount[y * m_width + x]) / static_cast<float>(m_instCountMax);
 				glm::vec3 color = getHeatmapColor(val);
 				tex[(y * m_width + x) * 3 + 0] = color.r;
 				tex[(y * m_width + x) * 3 + 1] = color.g;
-				tex[(y * m_width + x) * 3 + 2] = color.b; 
+				tex[(y * m_width + x) * 3 + 2] = color.b;
 			}
 		}
 
@@ -613,13 +613,12 @@ namespace ed {
 	}
 	uint32_t* FrameAnalysis::AllocateUndefinedBehaviorMap()
 	{
-		uint32_t* tex = (uint32_t*)malloc(m_width * m_height * sizeof(uint32_t));
+		auto* tex = static_cast<uint32_t*>(malloc(m_width * m_height * sizeof(uint32_t)));
 
 		for (int y = 0; y < m_height; y++) {
 			for (int x = 0; x < m_width; x++) {
-				uint32_t ubType = GetUndefinedBehaviorLastType(x, y);
 
-				if (ubType)
+				if (GetUndefinedBehaviorLastType(x, y))
 					tex[y * m_width + x] = 0xFFFFFFFF;
 				else
 					tex[y * m_width + x] = (m_color[y * m_width + x] & 0x00FFFFFF) | 0x66000000; // darken the texture
@@ -633,7 +632,7 @@ namespace ed {
 		if (!m_hasBreakpoints)
 			return nullptr;
 
-		uint32_t* tex = (uint32_t*)malloc(m_width * m_height * sizeof(uint32_t));
+		auto* tex = static_cast<uint32_t*>(malloc(m_width * m_height * sizeof(uint32_t)));
 
 		for (int y = 0; y < m_height; y++) {
 			for (int x = 0; x < m_width; x++) {
@@ -708,7 +707,7 @@ namespace ed {
 		// generate new instructions
 		if (inputInstruction && outputInstruction) {
 			if (lastBBIndex >= func.size())
-				lastBBIndex = func.size() - 1;
+				lastBBIndex = static_cast<int>(func.size()) - 1;
 			for (int i = 0; i < clearBB.size(); i++) {
 				if (!clearBB[i]) {
 					lastBBIndex = i;
@@ -737,7 +736,6 @@ namespace ed {
 				components = 4;
 			}
 
-
 			if (func.getReturnType().isVoid()) {
 				bb->opStore(outputInstruction, newValue);
 				bb->opReturn();
@@ -748,7 +746,7 @@ namespace ed {
 	}
 	float* FrameAnalysis::AllocateVariableValueMap(PipelineItem* pass, const std::string& variableName, unsigned int line, uint8_t& components)
 	{
-		if (pass == nullptr || variableName.size() == 0 || line == 0 || pass->Type != PipelineItem::ItemType::ShaderPass)
+		if (pass == nullptr || variableName.empty() || line == 0 || pass->Type != PipelineItem::ItemType::ShaderPass)
 			return nullptr;
 
 		pipe::ShaderPass* passData = ((pipe::ShaderPass*)pass->Data);
@@ -756,10 +754,9 @@ namespace ed {
 		if (oldSPV.size() <= 1)
 			return nullptr;
 
-		spvgentwo::HeapAllocator* allocator = new spvgentwo::HeapAllocator();
-		spvgentwo::Grammar* grammar = new spvgentwo::Grammar(allocator);
-		spvgentwo::Module* module = new spvgentwo::Module(allocator);
-
+		auto* allocator = new spvgentwo::HeapAllocator();
+		auto* grammar = new spvgentwo::Grammar(allocator);
+		auto* module = new spvgentwo::Module(allocator);
 
 		BinaryVectorReader reader(oldSPV);
 
@@ -769,7 +766,7 @@ namespace ed {
 		module->reconstructTypeAndConstantInfo();
 		module->reconstructNames();
 
-		spvgentwo::Instruction* outputInstruction = nullptr, *inputInstruction = nullptr;
+		spvgentwo::Instruction *outputInstruction = nullptr, *inputInstruction = nullptr;
 		module->iterateInstructions([&](spvgentwo::Instruction& inst) {
 			if (inst.getOperation() == spvgentwo::spv::Op::OpVariable) {
 				spvgentwo::spv::StorageClass sc = inst.getStorageClass();
@@ -778,7 +775,6 @@ namespace ed {
 			}
 		});
 
-
 		// if HLSL, check @name functions
 		if (ed::ShaderCompiler::GetShaderLanguageFromExtension(passData->PSPath) == ShaderLanguage::HLSL) {
 			std::string entryName = "@" + std::string(passData->PSEntry);
@@ -786,16 +782,16 @@ namespace ed {
 			for (auto& f : funcs) {
 				std::string fName = std::string(f.getName());
 				if (fName.find(entryName) == 0)
-					;//m_variableViewerProcess(module, f, variableName, line, outputInstruction, inputInstruction, components);
+					; // m_variableViewerProcess(module, f, variableName, line, outputInstruction, inputInstruction, components);
 			}
 		}
-		// otherwise check entry points
+		// otherwise, check entry points
 		else {
 			auto& entryPoints = module->getEntryPoints();
 			for (auto& f : entryPoints) {
-				std::string fName = std::string(f.getName());
+				auto fName = std::string(f.getName());
 				if (fName == "main")
-					; //m_variableViewerProcess(module, f, variableName, line, outputInstruction, inputInstruction, components);
+					; // m_variableViewerProcess(module, f, variableName, line, outputInstruction, inputInstruction, components);
 			}
 		}
 
@@ -804,7 +800,7 @@ namespace ed {
 		std::vector<unsigned int> newSPV;
 		spvgentwo::BinaryVectorWriter writer(newSPV);
 		module->write(writer);
-
+		// TODO: ? vvv
 		bool failed = false;
 		//(outputInstruction == nullptr || inputInstruction == nullptr);
 
@@ -816,7 +812,7 @@ namespace ed {
 			return nullptr;
 
 		std::string newGLSL = ed::ShaderCompiler::ConvertToGLSL(newSPV, ed::ShaderLanguage::GLSL, ed::ShaderStage::Pixel, passData->TSUsed, passData->GSUsed, nullptr, false);
-		
+
 		// input the new shader
 		m_renderer->RecompileFromSource(pass->Name, "", newGLSL);
 		m_renderer->Render();

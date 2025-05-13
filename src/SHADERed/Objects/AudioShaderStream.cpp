@@ -10,8 +10,8 @@
 
 void audioShaderCallbackFixed(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-	ed::AudioShaderStream* player = (ed::AudioShaderStream*)pDevice->pUserData;
-	if (player == NULL)
+	auto* player = static_cast<ed::AudioShaderStream*>(pDevice->pUserData);
+	if (player == nullptr)
 		return;
 
 	std::lock_guard<std::mutex> guard(player->Mutex);
@@ -24,13 +24,13 @@ void audioShaderCallbackFixed(ma_device* pDevice, void* pOutput, const void* pIn
 }
 void audioShaderCallback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
-	ed::AudioShaderStream* player = (ed::AudioShaderStream*)pDevice->pUserData;
-	if (player == NULL)
+	auto* player = static_cast<ed::AudioShaderStream*>(pDevice->pUserData);
+	if (player == nullptr)
 		return;
 
 	ma_uint32 pcmFramesAvailableInRB;
 	ma_uint32 pcmFramesProcessed = 0;
-	ma_uint8* pRunningOutput = (ma_uint8*)pOutput;
+	auto pRunningOutput = static_cast<ma_uint8*>(pOutput);
 
 	/*
     The first thing to do is check if there's enough data available in the ring buffer. If so we can read from it. Otherwise we need to keep filling
@@ -66,7 +66,7 @@ void audioShaderCallback(ma_device* pDevice, void* pOutput, const void* pInput, 
 			ma_pcm_rb_acquire_write(player->GetRingBuffer(), &framesToWrite, &pWriteBuffer);
 			{
 				// MA_ASSERT(framesToWrite == PCM_FRAME_CHUNK_SIZE); /* <-- This should always work in this example because we just reset the ring buffer. */
-				audioShaderCallbackFixed(pDevice, pWriteBuffer, NULL, framesToWrite);
+				audioShaderCallbackFixed(pDevice, pWriteBuffer, nullptr, framesToWrite);
 			}
 			ma_pcm_rb_commit_write(player->GetRingBuffer(), framesToWrite, pWriteBuffer);
 		}
@@ -85,7 +85,7 @@ namespace ed {
 		NeedsUpdate = false;
 		CurrentTime = 0.0f;
 
-		ma_pcm_rb_init(ma_format_s16, 2, SHADER_STREAM_PCM_FRAME_CHUNK_SIZE, NULL, NULL, &m_rb);
+		ma_pcm_rb_init(ma_format_s16, 2, SHADER_STREAM_PCM_FRAME_CHUNK_SIZE, nullptr, nullptr, &m_rb);
 		
 		m_deviceConfig = ma_device_config_init(ma_device_type_playback);
 		m_deviceConfig.playback.format = ma_format_s16;
@@ -94,7 +94,7 @@ namespace ed {
 		m_deviceConfig.dataCallback = audioShaderCallback;
 		m_deviceConfig.pUserData = this;
 
-		if (ma_device_init(NULL, &m_deviceConfig, &m_device) != MA_SUCCESS)
+		if (ma_device_init(nullptr, &m_deviceConfig, &m_device) != MA_SUCCESS)
 			ma_pcm_rb_uninit(&m_rb);
 	}
 	AudioShaderStream::~AudioShaderStream()
@@ -147,7 +147,7 @@ namespace ed {
 			)";
 		}
 
-		std::string psTrans = "";
+		std::string psTrans;
 		if (isHLSL) {
 			std::vector<unsigned int> spv;
 
@@ -156,8 +156,8 @@ namespace ed {
 		}
 		const char* psSource = isHLSL ? psTrans.c_str() : psCodeIn.c_str();
 
-		GLint success = 0;
-		char infoLog[512];
+		// GLint success = 0;
+		// char infoLog[512];
 
 		// create vertex shader
 		unsigned int audioVS = glCreateShader(GL_VERTEX_SHADER);
@@ -197,7 +197,7 @@ namespace ed {
 		glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f)));
 		glViewport(0, 0, 1024, 1);
 
-		glUniform1f(m_svarCurTimeLoc, CurrentTime);
+		glUniform1f(static_cast<GLint>(m_svarCurTimeLoc), CurrentTime);
 		glBindVertexArray(m_fsRectVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
@@ -208,8 +208,8 @@ namespace ed {
 
 		for (int s = 0; s < 1024; s++) {
 			int off = s * 4;
-			m_audio[s * 2] = m_pixels[off + 0] * INT16_MAX;
-			m_audio[s * 2 + 1] = m_pixels[off + 1] * INT16_MAX;
+			m_audio[s * 2] = INT16_MAX * static_cast<short>(m_pixels[off + 0]);
+			m_audio[s * 2 + 1] = INT16_MAX * static_cast<short>(m_pixels[off + 1]);
 		}
 
 		NeedsUpdate = false;

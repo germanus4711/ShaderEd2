@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
-#include <glm/glm.hpp>
 #include <SHADERed/Engine/AudioPlayer.h>
+#include <glm/glm.hpp>
+#include <string>
 
 #include <GL/glew.h>
 #if defined(__APPLE__)
@@ -111,19 +111,17 @@ namespace ed {
 				free(Buffer->Data);
 				delete Buffer;
 			}
-			if (Image != nullptr)
-				delete Image;
-			if (Image3D != nullptr)
-				delete Image3D;
+
+			delete Image;
+			delete Image3D;
 
 			if (RT != nullptr) {
 				glDeleteTextures(1, &RT->DepthStencilBuffer);
 				delete RT;
 			}
-			if (Sound != nullptr)
-				delete Sound;
-			if (Plugin != nullptr)
-				delete Plugin;
+
+			delete Sound;
+			delete Plugin;
 
 			glDeleteTextures(1, &Texture);
 			glDeleteTextures(1, &FlippedTexture);

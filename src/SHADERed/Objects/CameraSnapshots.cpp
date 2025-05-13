@@ -9,7 +9,7 @@ namespace ed {
 		for (int i = 0; i < Names.size(); i++)
 			if (Names[i] == name)
 				return Matrices[i];
-		return glm::mat4(1);
+		return {1};
 	}
 	void CameraSnapshots::Remove(const std::string& name)
 	{

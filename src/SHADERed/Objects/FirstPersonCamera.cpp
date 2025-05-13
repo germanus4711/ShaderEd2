@@ -1,7 +1,6 @@
 #include <SHADERed/Objects/FirstPersonCamera.h>
 #include <glm/gtc/matrix_transform.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
-#include <stdio.h>
 #include <algorithm>
 #include <glm/gtx/euler_angles.hpp>
 

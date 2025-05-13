@@ -18,8 +18,8 @@
 /* compute shader callbacks */
 void allocateWorkgroupMemory(struct spvm_state* state, spvm_word result_id, spvm_word type_id)
 {
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
-	ed::DebugInformation::SharedMemoryEntry memEntry;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
+	ed::DebugInformation::SharedMemoryEntry memEntry {};
 
 	memEntry.Destination = &state->results[result_id];
 	memcpy(&memEntry.Data, memEntry.Destination, sizeof(spvm_result));
@@ -41,11 +41,11 @@ void writeWorkgroupMemory(struct spvm_state* state, spvm_word result_id, spvm_wo
 
 		spvm_result_t sharedData = nullptr;
 
-		ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+		auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 
-		for (int i = 0; i < dbgr->SharedMemory.size(); i++) {
-			if (dbgr->SharedMemory[i].Slot == memory_id) {
-				sharedData = &dbgr->SharedMemory[i].Data;
+		for (auto& i : dbgr->SharedMemory) {
+			if (i.Slot == memory_id) {
+				sharedData = &i.Data;
 				break;
 			}
 		}
@@ -83,11 +83,10 @@ void writeWorkgroupMemory(struct spvm_state* state, spvm_word result_id, spvm_wo
 }
 void controlBarrier(struct spvm_state* state, spvm_word exec, spvm_word mem, spvm_word sem)
 {
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 
 	// copy memory
-	for (int i = 0; i < dbgr->SharedMemory.size(); i++) {
-		const ed::DebugInformation::SharedMemoryEntry& entry = dbgr->SharedMemory[i];
+	for (auto& entry : dbgr->SharedMemory) {
 		spvm_member_memcpy(entry.Data.members, entry.Destination->members, entry.Data.member_count);
 	}
 
@@ -95,14 +94,13 @@ void controlBarrier(struct spvm_state* state, spvm_word exec, spvm_word mem, spv
 	dbgr->SyncWorkgroup();
 
 	// copy memory
-	for (int i = 0; i < dbgr->SharedMemory.size(); i++) {
-		const ed::DebugInformation::SharedMemoryEntry& entry = dbgr->SharedMemory[i];
+	for (auto& entry : dbgr->SharedMemory) {
 		spvm_member_memcpy(entry.Destination->members, entry.Data.members, entry.Destination->member_count);
 	}
 }
 void atomicOperation(spvm_word inst, spvm_word word_count, struct spvm_state* state)
 {
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 
 	switch (inst) {
 	case SpvOpAtomicLoad:
@@ -281,6 +279,7 @@ void atomicOperation(spvm_word inst, spvm_word word_count, struct spvm_state* st
 		if (shared)
 			spvm_member_memcpy(pointer->members, shared->members, pointer->member_count);
 	} break;
+	default:;
 	}
 }
 
@@ -289,7 +288,7 @@ void emitVertex(struct spvm_state* state, spvm_word stream)
 {
 	// TODO: use spvm_word stream
 
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 
 	spvm_word mem_count = 0;
 	spvm_member_t glPosObject = spvm_state_get_builtin(state, SpvBuiltInPosition, &mem_count);
@@ -304,14 +303,14 @@ void endPrimitive(struct spvm_state* state, spvm_word stream)
 {
 	// TODO: use spvm_word stream
 
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 	dbgr->EndPrimitive();
 }
 
 /* analyzer functions */
 void onUndefinedBehavior(struct spvm_state* state, spvm_word ub)
 {
-	ed::DebugInformation* dbgr = (ed::DebugInformation*)state->owner->user_data;
+	auto* dbgr = static_cast<ed::DebugInformation*>(state->owner->user_data);
 	dbgr->OnUndefinedBehavior(state, ub);
 }
 
@@ -322,7 +321,7 @@ bool isPointInTriangle(glm::vec2 p, glm::vec2 p0, glm::vec2 p1, glm::vec2 p2)
 	float s = p0.y * p2.x - p0.x * p2.y + (p2.y - p0.y) * p.x + (p0.x - p2.x) * p.y;
 	float t = p0.x * p1.y - p0.y * p1.x + (p0.y - p1.y) * p.x + (p1.x - p0.x) * p.y;
 
-	if ((s < 0) != (t < 0))
+	if (s < 0 != t < 0)
 		return false;
 
 	float a = -p1.y * p2.x + p0.y * (p2.x - p1.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y;
@@ -466,13 +465,13 @@ namespace ed {
 					m_workgroup[id] = spvm_state_create(m_shader);
 
 					spvm_state_t worker = m_workgroup[id];
-spvm_result_t glsl_std_450 = spvm_state_get_result(worker, (char*)"GLSL.std.450");
+					spvm_result_t glsl_std_450 = spvm_state_get_result(worker, (char*)"GLSL.std.450");
 					if (glsl_std_450)
 						glsl_std_450->extension = m_vmGLSL;
 
 					m_setThreadID(worker, startX + id_x, startY + id_y, startZ + id_z, m_numGroupsX, m_numGroupsY, m_numGroupsZ);
 
-spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
+					spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 					spvm_state_prepare(worker, fnMain);
 				}
 			}
@@ -607,27 +606,27 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		bool requiresVarCleanup = false;
 		std::vector<ed::ShaderVariable*> vars;
 		if (owner->Type == PipelineItem::ItemType::ShaderPass) {
-			pipe::ShaderPass* pass = (pipe::ShaderPass*)owner->Data;
+			auto* pass = static_cast<pipe::ShaderPass*>(owner->Data);
 			vars = pass->Variables.GetVariables();
 		} else if (owner->Type == PipelineItem::ItemType::ComputePass) {
-			pipe::ComputePass* pass = (pipe::ComputePass*)owner->Data;
+			auto* pass = static_cast<pipe::ComputePass*>(owner->Data);
 			vars = pass->Variables.GetVariables();
 		} else if (owner->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 			pluginUsesCustomTextures = plData->Owner->PipelineItem_DebugUsesCustomTextures(plData->Type, plData->PluginData);
 
 			if (item != nullptr)
 				plData->Owner->PipelineItem_DebugPrepareVariables(plData->Type, plData->PluginData, item->Name);
 
-			int varCount = plData->Owner->PipelineItem_GetVariableCount(plData->Type, plData->PluginData);
+			int varCount = static_cast<int>(plData->Owner->PipelineItem_GetVariableCount(plData->Type, plData->PluginData));
 			vars.resize(varCount);
 
 			for (int i = 0; i < varCount; i++) {
 				const char* varName = plData->Owner->PipelineItem_GetVariableName(plData->Type, plData->PluginData, i);
-				ShaderVariable::ValueType type = (ShaderVariable::ValueType)plData->Owner->PipelineItem_GetVariableType(plData->Type, plData->PluginData, i);
+				auto type = static_cast<ShaderVariable::ValueType>(plData->Owner->PipelineItem_GetVariableType(plData->Type, plData->PluginData, i));
 
-				ed::ShaderVariable* var = new ed::ShaderVariable(type, varName);
+				auto* var = new ed::ShaderVariable(type, varName);
 				vars[i] = var;
 				int cm = var->GetColumnCount();
 				int rm = var->GetRowCount();
@@ -681,28 +680,28 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		// update system variables
 		if (item) {
 			if (item->Type == PipelineItem::ItemType::Geometry) {
-				pipe::GeometryItem* geoData = reinterpret_cast<pipe::GeometryItem*>(item->Data);
+				auto* geoData = static_cast<pipe::GeometryItem*>(item->Data);
 
 				if (geoData->Type == pipe::GeometryItem::Rectangle) {
 					glm::vec3 scaleRect(geoData->Scale.x * SystemVariableManager::Instance().GetViewportSize().x, geoData->Scale.y * SystemVariableManager::Instance().GetViewportSize().y, 1.0f);
-					glm::vec3 posRect((geoData->Position.x + 0.5f) * m_renderer->GetLastRenderSize().x, (geoData->Position.y + 0.5f) * m_renderer->GetLastRenderSize().y, -1000.0f);
+					glm::vec3 posRect((geoData->Position.x + 0.5f) * static_cast<float>(m_renderer->GetLastRenderSize().x), (geoData->Position.y + 0.5f) * static_cast<float>(m_renderer->GetLastRenderSize().y), -1000.0f);
 					SystemVariableManager::Instance().SetGeometryTransform(item, scaleRect, geoData->Rotation, posRect);
 				} else
 					SystemVariableManager::Instance().SetGeometryTransform(item, geoData->Scale, geoData->Rotation, geoData->Position);
 
 				SystemVariableManager::Instance().SetPicked(m_renderer->IsPicked(item));
 			} else if (item->Type == PipelineItem::ItemType::Model) {
-				pipe::Model* objData = reinterpret_cast<pipe::Model*>(item->Data);
+				auto* objData = static_cast<pipe::Model*>(item->Data);
 
 				SystemVariableManager::Instance().SetPicked(m_renderer->IsPicked(item));
 				SystemVariableManager::Instance().SetGeometryTransform(item, objData->Scale, objData->Rotation, objData->Position);
 			} else if (item->Type == PipelineItem::ItemType::VertexBuffer) {
-				pipe::VertexBuffer* vbData = reinterpret_cast<pipe::VertexBuffer*>(item->Data);
+				auto* vbData = static_cast<pipe::VertexBuffer*>(item->Data);
 
 				SystemVariableManager::Instance().SetPicked(m_renderer->IsPicked(item));
 				SystemVariableManager::Instance().SetGeometryTransform(item, vbData->Scale, vbData->Rotation, vbData->Position);
 			} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-				pipe::PluginItemData* plData = reinterpret_cast<pipe::PluginItemData*>(item->Data);
+				auto* plData = static_cast<pipe::PluginItemData*>(item->Data);
 
 				float scale[3], pos[3], rota[3];
 				plData->Owner->PipelineItem_GetTransform(plData->Type, plData->PluginData, pos, scale, rota);
@@ -719,13 +718,13 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 			size_t curloc = 0;
 			size_t seploc = vname.find_first_of(".[");
 
-			std::string tokenName = "";
+			std::string tokenName;
 			if (seploc == std::string::npos)
 				tokenName = vname;
 			else
 				tokenName = vname.substr(0, seploc);
 
-			spvm_result_t result = spvm_state_get_result(m_vm, (const spvm_string)tokenName.c_str());
+			spvm_result_t result = spvm_state_get_result(m_vm, const_cast<const spvm_string>(tokenName.c_str()));
 
 			spvm_member_t pointer = nullptr;
 			spvm_result_t pointerType = nullptr;
@@ -773,12 +772,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 				tokenName = vname.substr(curloc, seploc - curloc);
 
 				// index
-				if (tokenName.size() > 0 && isdigit(tokenName[0])) {
+				if (!tokenName.empty() && isdigit(tokenName[0])) {
 					tokenName = tokenName.substr(0, tokenName.size() - 1);
 
 					bool allDigits = true;
-					for (int i = 0; i < tokenName.size(); i++)
-						if (!isdigit(tokenName[i])) {
+					for (char i : tokenName)
+						if (!isdigit(i)) {
 							allDigits = false;
 							break;
 						}
@@ -819,12 +818,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 				tokenName = vname.substr(curloc);
 
 				// index
-				if (tokenName.size() > 0 && isdigit(tokenName[0])) {
+				if (!tokenName.empty() && isdigit(tokenName[0])) {
 					tokenName = tokenName.substr(0, tokenName.size() - 1);
 
 					bool allDigits = true;
-					for (int i = 0; i < tokenName.size(); i++)
-						if (!isdigit(tokenName[i])) {
+					for (char i : tokenName)
+						if (!isdigit(i)) {
 							allDigits = false;
 							break;
 						}
@@ -966,8 +965,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 						}
 
 						if (!wrongBind && textureID != 0) {
-							ObjectManagerItem* itemData = m_objs->GetByTextureID(textureID);
-							if (itemData) {
+							if (ObjectManagerItem* itemData = m_objs->GetByTextureID(textureID)) {
 								if (!(itemData->Type == ObjectType::Texture || itemData->Type == ObjectType::Texture3D || itemData->Type == ObjectType::RenderTexture || itemData->Type == ObjectType::Image || itemData->Type == ObjectType::Image3D || itemData->Type == ObjectType::KeyboardTexture)) {
 									wrongBind = true;
 									textureID = 0;
@@ -976,11 +974,11 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 						}
 
 						if ((wrongBind || textureID == 0) && !pluginUsesCustomTextures) {
-							spvm_image_data* imgDataStruct = static_cast<spvm_image_data*>(malloc(sizeof(spvm_image_data)));
+							auto* imgDataStruct = static_cast<spvm_image_data*>(malloc(sizeof(spvm_image_data)));
 
 							// get texture size
 							glm::ivec2 size(1, 1);
-							float* pixelData = static_cast<float*>(calloc(1, sizeof(float) * size.x * size.y * 4));
+							auto pixelData = static_cast<float*>(calloc(1, sizeof(float) * size.x * size.y * 4));
 
 							spvm_image_create(imgDataStruct, pixelData, size.x, size.y, 1);
 
@@ -997,9 +995,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							if (slot->members == nullptr) // if slot->members == nullptr it means that it's a pointer/function argument
 								continue;
 
-							spvm_image_t img = (spvm_image_t)malloc(sizeof(spvm_image));
+							auto img = static_cast<spvm_image_t>(malloc(sizeof(spvm_image)));
 
-							if (type_info->image_info == NULL)
+							if (type_info->image_info == nullptr)
 								type_info = &m_vm->results[type_info->pointer];
 
 							glm::ivec3 imgSize(1, 1, 1);
@@ -1008,23 +1006,23 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							if (pluginUsesCustomTextures) {
 								// cubemaps
 								if (type_info->image_info->dim == SpvDimCube) {
-									pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+									auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 									pluginCustomTexture = plData->Owner->PipelineItem_DebugGetTexture(plData->Type, plData->PluginData, sampler2Dloc, slot->name);
 									plData->Owner->PipelineItem_DebugGetTextureSize(plData->Type, plData->PluginData, sampler2Dloc, slot->name, imgSize.x, imgSize.y, imgSize.z);
 									imgSize.z = 6;
 
-									imgData = (float*)malloc(sizeof(float) * imgSize.x * imgSize.y * 6 * 4); // 6 faces
+									imgData = static_cast<float*>(malloc(sizeof(float) * imgSize.x * imgSize.y * 6 * 4)); // 6 faces
 
 									// get the data from the GPU
 									glBindTexture(GL_TEXTURE_CUBE_MAP, pluginCustomTexture);
-									for (int i = 0; i < 6; i++)
-										glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, GL_FLOAT, imgData + imgSize.x * imgSize.y * 4 * i);
+									for (int index = 0; index < 6; index++)
+										glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA, GL_FLOAT, imgData + imgSize.x * imgSize.y * 4 * index);
 									glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 								}
 								// 3d textures
 								else if (type_info->image_info->dim == SpvDim3D) {
-									pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+									auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 									pluginCustomTexture = plData->Owner->PipelineItem_DebugGetTexture(plData->Type, plData->PluginData, sampler2Dloc, slot->name);
 									plData->Owner->PipelineItem_DebugGetTextureSize(plData->Type, plData->PluginData, sampler2Dloc, slot->name, imgSize.x, imgSize.y, imgSize.z);
@@ -1038,13 +1036,13 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 								}
 								// 2d textures
 								else {
-									pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+									auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 									pluginCustomTexture = plData->Owner->PipelineItem_DebugGetTexture(plData->Type, plData->PluginData, sampler2Dloc, slot->name);
 									plData->Owner->PipelineItem_DebugGetTextureSize(plData->Type, plData->PluginData, sampler2Dloc, slot->name, imgSize.x, imgSize.y, imgSize.z);
 									imgSize.z = 1;
 
-									imgData = (float*)malloc(sizeof(float) * imgSize.x * imgSize.y * 4);
+									imgData = static_cast<float*>(malloc(sizeof(float) * imgSize.x * imgSize.y * 4));
 
 									// get the data from the GPU
 									glBindTexture(GL_TEXTURE_2D, pluginCustomTexture);
@@ -1072,12 +1070,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 									imgSize.y = size.y;
 									imgSize.z = 6;
 
-									imgData = (float*)malloc(sizeof(float) * size.x * size.y * 6 * 4); // 6 faces
+									imgData = static_cast<float*>(malloc(sizeof(float) * size.x * size.y * 6 * 4)); // 6 faces
 
 									// get the data from the GPU
 									glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-									for (int i = 0; i < 6; i++)
-										glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, GL_FLOAT, imgData + size.x * size.y * 4 * i);
+									for (int index = 0; index < 6; index++)
+										glGetTexImage(GL_TEXTURE_CUBE_MAP_POSITIVE_X + index, 0, GL_RGBA, GL_FLOAT, imgData + size.x * size.y * 4 * index);
 									glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 								}
 								// 3d textures
@@ -1092,7 +1090,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 											imgSize = glm::ivec3(itemData->TextureSize.x, itemData->TextureSize.y, itemData->Depth);
 									}
 
-									imgData = (float*)malloc(sizeof(float) * imgSize.x * imgSize.y * imgSize.z * 4);
+									imgData = static_cast<float*>(malloc(sizeof(float) * imgSize.x * imgSize.y * imgSize.z * 4));
 
 									// get the data from the GPU
 									glBindTexture(GL_TEXTURE_3D, textureID);
@@ -1117,7 +1115,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 									imgSize.x = size.x;
 									imgSize.y = size.y;
 
-									imgData = (float*)malloc(sizeof(float) * size.x * size.y * 4);
+									imgData = static_cast<float*>(malloc(sizeof(float) * size.x * size.y * 4));
 
 									// get the data from the GPU
 									glBindTexture(GL_TEXTURE_2D, textureID);
@@ -1127,7 +1125,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							}
 
 							if (imgData != nullptr) {
-								spvm_image_data* imgDataStruct = static_cast<spvm_image_data*>(malloc(sizeof(spvm_image_data)));
+								auto* imgDataStruct = static_cast<spvm_image_data*>(malloc(sizeof(spvm_image_data)));
 								spvm_image_create(imgDataStruct, imgData, imgSize.x, imgSize.y, imgSize.z);
 								spvm_image_t img = &imgDataStruct->base;
 							}
@@ -1144,9 +1142,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 					}
 				} else if (pointerInfo->storage_class == SpvStorageClassStorageBuffer || isBufferBlock) {
 					int binding = 0;
-					for (int i = 0; i < slot->decoration_count; i++) {
-						if (slot->decorations[i].type == SpvDecorationBinding) {
-							binding = slot->decorations[i].literal1;
+					for (int index = 0; index < slot->decoration_count; index++) {
+						if (slot->decorations[index].type == SpvDecorationBinding) {
+							binding = slot->decorations[index].literal1;
 							break;
 						}
 					}
@@ -1154,7 +1152,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 					if (binding < ubos.size()) {
 						ed::BufferObject* obj = m_objs->GetByBufferID(ubos[binding])->Buffer;
 
-						float* data = (float*)calloc(1, obj->Size);
+						auto* data = static_cast<float*>(calloc(1, obj->Size));
 						glBindBuffer(GL_SHADER_STORAGE_BUFFER, obj->ID);
 						glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, obj->Size, data);
 						glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -1204,8 +1202,8 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		}
 
 		if (requiresVarCleanup) {
-			for (int i = 0; i < vars.size(); i++)
-				delete vars[i];
+			for (auto & var : vars)
+				delete var;
 			vars.clear();
 		}
 	}
@@ -1336,15 +1334,15 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		bool usePlugin = false;
 		ed::IPlugin2* plugin2 = nullptr;
 		if (m_pixel != nullptr && m_pixel->Pass == nullptr && m_pixel->Pass->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)m_pixel->Pass->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(m_pixel->Pass->Data);
 			if (plData->Owner->GetVersion() >= 2) {
-				plugin2 = ((ed::IPlugin2*)plData->Owner);
+				plugin2 = dynamic_cast<ed::IPlugin2*>(plData->Owner);
 
-				if (!plugin2->PipelineItem_SupportsImmediateMode(plData->Type, plData->PluginData, (ed::plugin::ShaderStage)m_stage))
+				if (!plugin2->PipelineItem_SupportsImmediateMode(plData->Type, plData->PluginData, static_cast<ed::plugin::ShaderStage>(m_stage)))
 					return nullptr;
 
-				if (plugin2->PipelineItem_HasCustomImmediateModeCompiler(plData->Type, plData->PluginData, (ed::plugin::ShaderStage)m_stage)) {
-					if (!plugin2->PipelineItem_ImmediateModeCompile(plData->Type, plData->PluginData, (ed::plugin::ShaderStage)m_stage, entry.c_str()))
+				if (plugin2->PipelineItem_HasCustomImmediateModeCompiler(plData->Type, plData->PluginData, static_cast<ed::plugin::ShaderStage>(m_stage))) {
+					if (!plugin2->PipelineItem_ImmediateModeCompile(plData->Type, plData->PluginData, static_cast<ed::plugin::ShaderStage>(m_stage), entry.c_str()))
 						return nullptr;
 					else
 						usePlugin = true;
@@ -1356,7 +1354,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		std::vector<std::string> varList;
 		if (!usePlugin) {
-			std::string curFunction = "";
+			std::string curFunction;
 			if (m_vm && m_vm->current_function && m_vm->current_function->name)
 				curFunction = m_vm->current_function->name;
 
@@ -1404,10 +1402,10 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		// copy variable values
 		spvm_state_group_sync(m_vm);
-		for (int i = 0; i < varList.size(); i++) {
+		for (const auto & i : varList) {
 			size_t varValueCount = 0;
 			spvm_result_t varType = nullptr;
-			spvm_member_t varValue = GetVariable(varList[i], varValueCount, varType);
+			spvm_member_t varValue = GetVariable(i, varValueCount, varType);
 
 			if (varValue == nullptr)
 				continue;
@@ -1423,22 +1421,22 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 				// TODO: also check for the type, or there might be some crashes caused by two vars with different type (?) (mat4 and vec4 for example)
 
-				if (res->member_count == varValueCount && resType->value_type == varType->value_type && res->members != nullptr && strcmp(varList[i].c_str(), res->name) == 0) {
-					spvm_member_memcpy(res->members, varValue, varValueCount);
+				if (res->member_count == varValueCount && resType->value_type == varType->value_type && res->members != nullptr && strcmp(i.c_str(), res->name) == 0) {
+					spvm_member_memcpy(res->members, varValue, static_cast<spvm_word>(varValueCount));
 
 					pointerToVariable[0] = res;
 
 					if (m_vmImmediate->derivative_used) {
 						if (m_vmImmediate->derivative_group_x) {
-							spvm_member_memcpy(m_vmImmediate->derivative_group_x->results[j].members, GetVariableFromState(m_vm->derivative_group_x, varList[i], varValueCount), varValueCount);
+							spvm_member_memcpy(m_vmImmediate->derivative_group_x->results[j].members, GetVariableFromState(m_vm->derivative_group_x, i, varValueCount), varValueCount);
 							pointerToVariable[1] = &m_vmImmediate->derivative_group_x->results[j];
 						}
 						if (m_vmImmediate->derivative_group_y) {
-							spvm_member_memcpy(m_vmImmediate->derivative_group_y->results[j].members, GetVariableFromState(m_vm->derivative_group_y, varList[i], varValueCount), varValueCount);
+							spvm_member_memcpy(m_vmImmediate->derivative_group_y->results[j].members, GetVariableFromState(m_vm->derivative_group_y, i, varValueCount), varValueCount);
 							pointerToVariable[2] = &m_vmImmediate->derivative_group_y->results[j];
 						}
 						if (m_vmImmediate->derivative_group_d) {
-							spvm_member_memcpy(m_vmImmediate->derivative_group_d->results[j].members, GetVariableFromState(m_vm->derivative_group_d, varList[i], varValueCount), varValueCount);
+							spvm_member_memcpy(m_vmImmediate->derivative_group_d->results[j].members, GetVariableFromState(m_vm->derivative_group_d, i, varValueCount), varValueCount);
 							pointerToVariable[3] = &m_vmImmediate->derivative_group_d->results[j];
 						}
 					}
@@ -1455,7 +1453,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 					// TODO: also check for the type, or there might be some crashes caused by two vars with different type (?) (mat4 and vec4 for example)
 
-					if (res->member_count == varValueCount && res->members == nullptr && strcmp(varList[i].c_str(), res->name) == 0) {
+					if (res->member_count == varValueCount && res->members == nullptr && strcmp(i.c_str(), res->name) == 0) {
 						res->members = pointerToVariable[0]->members;
 
 						if (m_vmImmediate->derivative_used) {
@@ -1491,15 +1489,15 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		m_resetVM();
 		if (owner->Type == PipelineItem::ItemType::ShaderPass)
-			m_setupVM(((pipe::ShaderPass*)owner->Data)->VSSPV);
+			m_setupVM(static_cast<pipe::ShaderPass*>(owner->Data)->VSSPV);
 		else if (owner->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 			unsigned int spvSize = plData->Owner->PipelineItem_GetSPIRVSize(plData->Type, plData->PluginData, plugin::ShaderStage::Vertex);
 			std::vector<unsigned int> spv;
 			if (spvSize != 0) {
 				unsigned int* spvPtr = plData->Owner->PipelineItem_GetSPIRV(plData->Type, plData->PluginData, plugin::ShaderStage::Vertex);
-				spv = std::vector<unsigned int>(spvPtr, spvPtr + spvSize);
+				spv = std::vector(spvPtr, spvPtr + spvSize);
 			}
 			m_setupVM(spv);
 		}
@@ -1540,23 +1538,23 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 					InputLayoutValue inputType = InputLayoutValue::MaxCount;
 
 					if (pixel.Pass->Type == PipelineItem::ItemType::ShaderPass) {
-						pipe::ShaderPass* passData = (pipe::ShaderPass*)pixel.Pass->Data;
+						auto* passData = static_cast<pipe::ShaderPass*>(pixel.Pass->Data);
 						if (location < passData->InputLayout.size()) {
 							inputType = passData->InputLayout[location].Value;
 							for (spvm_word j = 0; j < location; j++)
 								layOffset += InputLayoutItem::GetValueSize(passData->InputLayout[j].Value);
 						} else if (pixel.InstanceBuffer != nullptr) {
-							int bufferLocation = location - passData->InputLayout.size();
+							int bufferLocation = static_cast<int>(location - passData->InputLayout.size());
 
-							std::vector<ShaderVariable::ValueType> tData = m_objs->ParseBufferFormat(((ed::BufferObject*)pixel.InstanceBuffer)->ViewFormat);
+							std::vector<ShaderVariable::ValueType> tData = m_objs->ParseBufferFormat(static_cast<ed::BufferObject*>(pixel.InstanceBuffer)->ViewFormat);
 
 							int stride = 0;
 							for (const auto& dataEl : tData)
 								stride += ShaderVariable::GetSize(dataEl, true);
 
-							GLfloat* bufPtr = (GLfloat*)malloc(stride);
+							auto* bufPtr = static_cast<GLfloat*>(malloc(stride));
 
-							glBindBuffer(GL_ARRAY_BUFFER, ((ed::BufferObject*)pixel.InstanceBuffer)->ID);
+							glBindBuffer(GL_ARRAY_BUFFER, static_cast<ed::BufferObject*>(pixel.InstanceBuffer)->ID);
 							glGetBufferSubData(GL_ARRAY_BUFFER, pixel.InstanceID * stride, stride, &bufPtr[0]);
 							glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -1582,12 +1580,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							free(bufPtr);
 						}
 					} else if (pixel.Pass->Type == PipelineItem::ItemType::PluginItem) {
-						pipe::PluginItemData* plData = (pipe::PluginItemData*)pixel.Pass->Data;
+						auto* plData = static_cast<pipe::PluginItemData*>(pixel.Pass->Data);
 						if (location < plData->Owner->PipelineItem_GetInputLayoutSize(plData->Type, plData->PluginData)) {
-							plugin::InputLayoutItem inputItem;
+							plugin::InputLayoutItem inputItem{};
 							plData->Owner->PipelineItem_GetInputLayoutItem(plData->Type, plData->PluginData, location, inputItem);
 
-							inputType = (InputLayoutValue)inputItem.Value;
+							inputType = static_cast<InputLayoutValue>(inputItem.Value);
 						}
 					}
 
@@ -1602,7 +1600,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 						ed::BufferObject* vbData = nullptr;
 
 						if (pixel.Object != nullptr && pixel.Object->Type == PipelineItem::ItemType::VertexBuffer)
-							vbData = (BufferObject*)((pipe::VertexBuffer*)pixel.Object->Data)->Buffer;
+							vbData = static_cast<BufferObject*>(static_cast<pipe::VertexBuffer*>(pixel.Object->Data)->Buffer);
 
 						if (vbData != nullptr) {
 							std::vector<ShaderVariable::ValueType> tData = m_objs->ParseBufferFormat(vbData->ViewFormat);
@@ -1611,7 +1609,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							for (const auto& dataEl : tData)
 								stride += ShaderVariable::GetSize(dataEl, true);
 
-							GLfloat* bufPtr = (GLfloat*)malloc(pixel.VertexCount * stride);
+							auto* bufPtr = static_cast<GLfloat*>(malloc(pixel.VertexCount * stride));
 
 							glBindBuffer(GL_ARRAY_BUFFER, vbData->ID);
 							glGetBufferSubData(GL_ARRAY_BUFFER, pixel.VertexID * stride, pixel.VertexCount * stride, &bufPtr[0]);
@@ -1619,9 +1617,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 							int valCount = 0;
 							if (inputType >= InputLayoutValue::BufferInt && inputType <= InputLayoutValue::BufferInt4)
-								valCount = ((int)inputType - (int)InputLayoutValue::BufferInt) + 1;
+								valCount = (static_cast<int>(inputType) - static_cast<int>(InputLayoutValue::BufferInt)) + 1;
 							else if (inputType >= InputLayoutValue::BufferFloat && inputType <= InputLayoutValue::BufferFloat4)
-								valCount = ((int)inputType - (int)InputLayoutValue::BufferFloat) + 1;
+								valCount = (static_cast<int>(inputType) - static_cast<int>(InputLayoutValue::BufferFloat)) + 1;
 
 							for (int v = 0; v < valCount; v++)
 								value[v] = *(bufPtr + vertexIndex * (stride / sizeof(float)) + layOffset + v);
@@ -1704,7 +1702,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 						loc = slot->decorations[j].literal1;
 						break;
 					}
-
+				// Check this vvv
 				struct spvm_result copy;
 				memcpy(&copy, slot, sizeof(struct spvm_result));
 				copy.decorations = nullptr;
@@ -1752,7 +1750,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		float factor = 1 / (ab.x * ac.y - ab.y * ac.x);
 		float s = (ac.y * ap.x - ac.x * ap.y) * factor;
 		float t = (ab.x * ap.y - ab.y * ap.x) * factor;
-		return glm::vec3(1 - s - t, s, t);
+		return {1 - s - t, s, t};
 	}
 	void DebugInformation::PreparePixelShader(PipelineItem* owner, PipelineItem* item, PixelInformation* px)
 	{
@@ -1760,9 +1758,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		m_resetVM();
 		if (owner->Type == PipelineItem::ItemType::ShaderPass)
-			m_setupVM(((pipe::ShaderPass*)owner->Data)->PSSPV);
+			m_setupVM(static_cast<pipe::ShaderPass*>(owner->Data)->PSSPV);
 		else if (owner->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 			unsigned int spvSize = plData->Owner->PipelineItem_GetSPIRVSize(plData->Type, plData->PluginData, plugin::ShaderStage::Pixel);
 			std::vector<unsigned int> spv;
@@ -1844,7 +1842,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		glm::vec2 scrnPos2 = m_getScreenCoord(m_pixel->FinalPosition[1]);
 		glm::vec2 scrnPos3 = m_getScreenCoord(m_pixel->FinalPosition[2]);
 		glm::vec3 weights = m_getWeights(scrnPos1, scrnPos2, scrnPos3, pxPosition);
-		weights *= glm::vec3(m_pixel->FinalPosition[0].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[0].w), m_pixel->FinalPosition[1].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[1].w), m_pixel->FinalPosition[2].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[2].w));
+		weights *= glm::vec3(m_pixel->FinalPosition[0].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[0].w),
+			m_pixel->FinalPosition[1].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[1].w),
+			m_pixel->FinalPosition[2].w == 0.0f ? 0.0f : (1.0f / m_pixel->FinalPosition[2].w));
 
 		return weights;
 	}
@@ -1922,11 +1922,11 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 					// get type
 					spvm_result_t memType = spvm_state_get_type_info(state->results, pointer);
-					spvm_value_type elType = (spvm_value_type)memType->value_type;
+					auto elType = static_cast<spvm_value_type>(memType->value_type);
 					spvm_word vbcount = memType->value_bitcount;
 					if (elType == spvm_value_type_vector || elType == spvm_value_type_matrix) {
 						memType = spvm_state_get_type_info(state->results, &state->results[memType->pointer]);
-						elType = (spvm_value_type)memType->value_type;
+						elType = static_cast<spvm_value_type>(memType->value_type);
 						vbcount = memType->value_bitcount;
 					}
 
@@ -1938,7 +1938,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							else if (elType == spvm_value_type_float)
 								slot->members[c].value.f = (GET_VALUE_WITH_CHECK_FLOAT(value0, c) * weights.x + GET_VALUE_WITH_CHECK_FLOAT(value1, c) * weights.y + GET_VALUE_WITH_CHECK_FLOAT(value2, c) * weights.z) / weightSum;
 							else
-								slot->members[c].value.s = (GET_VALUE_WITH_CHECK_INT(value0, c) * weights.x + GET_VALUE_WITH_CHECK_INT(value1, c) * weights.y + GET_VALUE_WITH_CHECK_INT(value2, c) * weights.z) / weightSum;
+								slot->members[c].value.s = static_cast<int>((GET_VALUE_WITH_CHECK_INT(value0, c) * weights.x + GET_VALUE_WITH_CHECK_INT(value1, c) * weights.y + GET_VALUE_WITH_CHECK_INT(value2, c) * weights.z) / weightSum);
 						} else {
 							for (int r = 0; r < slot->members[c].member_count; c++) {
 								if (elType == spvm_value_type_float && vbcount > 32)
@@ -1946,7 +1946,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 								else if (elType == spvm_value_type_float)
 									slot->members[c].members[r].value.f = (GET_VALUE2_WITH_CHECK_FLOAT(value0, c, r) * weights.x + GET_VALUE2_WITH_CHECK_FLOAT(value1, c, r) * weights.y + GET_VALUE2_WITH_CHECK_FLOAT(value2, c, r) * weights.z) / weightSum;
 								else
-									slot->members[c].members[r].value.s = (GET_VALUE2_WITH_CHECK_INT(value0, c, r) * weights.x + GET_VALUE2_WITH_CHECK_INT(value1, c, r) * weights.y + GET_VALUE2_WITH_CHECK_INT(value2, c, r) * weights.z) / weightSum;
+									slot->members[c].members[r].value.s = static_cast<int>((GET_VALUE2_WITH_CHECK_INT(value0, c, r) * weights.x + GET_VALUE2_WITH_CHECK_INT(value1, c, r) * weights.y + GET_VALUE2_WITH_CHECK_INT(value2, c, r) * weights.z) / weightSum);
 							}
 						}
 					}
@@ -2017,9 +2017,9 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		m_resetVM();
 		if (owner->Type == PipelineItem::ItemType::ShaderPass)
-			m_setupVM(((pipe::ShaderPass*)owner->Data)->GSSPV);
+			m_setupVM(static_cast<pipe::ShaderPass*>(owner->Data)->GSSPV);
 		else if (owner->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 			unsigned int spvSize = plData->Owner->PipelineItem_GetSPIRVSize(plData->Type, plData->PluginData, plugin::ShaderStage::Geometry);
 			std::vector<unsigned int> spv;
@@ -2039,8 +2039,8 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		// clear some old info
 		for (auto& prim : pixel.GeometryOutput)
-			for (int i = 0; i < prim.Output.size(); i++)
-				for (auto& out : prim.Output[i]) {
+			for (auto & i : prim.Output)
+				for (auto& out : i) {
 					if (out.name) {
 						free(out.name);
 						out.name = nullptr;
@@ -2061,7 +2061,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 				pixel.GeometryOutputType = GeometryShaderOutput::TriangleStrip;
 			else if (m_vm->owner->geometry_output == SpvExecutionModeOutputLineStrip)
 				pixel.GeometryOutputType = GeometryShaderOutput::LineStrip;
-			pixel.GeometryOutput.push_back(GeometryShaderPrimitive());
+			pixel.GeometryOutput.emplace_back();
 		}
 		m_updatedGeometryOutput = true;
 
@@ -2134,12 +2134,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 					for (spvm_word vert = 0; vert < slot->member_count; vert++) {
 						// find the interface block from the VertexShaderOutput
 						spvm_result_t blockData = nullptr;
-						for (spvm_word j = 0; j < pixel.VertexShaderOutput[vert].size(); j++) {
-							const char* vsOutName = pixel.VertexShaderOutput[vert][j].name;
+						for (auto & j : pixel.VertexShaderOutput[vert]) {
+							const char* vsOutName = j.name;
 
 							// check by name or by location
-							if ((vsOutName && blockName && strcmp(vsOutName, blockName) == 0) || (pixel.VertexShaderOutput[vert][j].return_type != -1 && pixel.VertexShaderOutput[vert][j].return_type == location)) {
-								blockData = &pixel.VertexShaderOutput[vert][j];
+							if ((vsOutName && blockName && strcmp(vsOutName, blockName) == 0) || (j.return_type != -1 && j.return_type == location)) {
+								blockData = &j;
 								break;
 							}
 						}
@@ -2238,7 +2238,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		if (owner->Type == PipelineItem::ItemType::ShaderPass)
 			m_setupVM(((pipe::ShaderPass*)owner->Data)->TCSSPV);
 		else if (owner->Type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* plData = (pipe::PluginItemData*)owner->Data;
+			auto* plData = static_cast<pipe::PluginItemData*>(owner->Data);
 
 			unsigned int spvSize = plData->Owner->PipelineItem_GetSPIRVSize(plData->Type, plData->PluginData, plugin::ShaderStage::TessellationControl);
 			std::vector<unsigned int> spv;
@@ -2372,20 +2372,20 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 	void DebugInformation::PrepareComputeShader(PipelineItem* pass, int x, int y, int z)
 	{
 		m_stage = ShaderStage::Compute;
-		pipe::ComputePass* data = (pipe::ComputePass*)pass->Data;
+		auto* data = static_cast<pipe::ComputePass*>(pass->Data);
 
 		// TODO: plugins
 
 		m_resetVM();
 		m_setupVM(data->SPV);
 		m_copyUniforms(pass, nullptr);
-		m_setThreadID(m_vm, x, y, z, data->WorkX, data->WorkY, data->WorkZ);
+		m_setThreadID(m_vm, x, y, z, static_cast<int>(data->WorkX), static_cast<int>(data->WorkY), static_cast<int>(data->WorkZ));
 
-		m_numGroupsX = data->WorkX;
-		m_numGroupsY = data->WorkY;
-		m_numGroupsZ = data->WorkZ;
+		m_numGroupsX = static_cast<int>(data->WorkX);
+		m_numGroupsY = static_cast<int>(data->WorkY);
+		m_numGroupsZ = static_cast<int>(data->WorkZ);
 
-		if (data->SPV.size() > 0) {
+		if (!data->SPV.empty()) {
 			SPIRVParser parser;
 			parser.Parse(data->SPV);
 			if (parser.BarrierUsed)
@@ -2399,7 +2399,12 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 			return 0;
 
 		for (spvm_word i = 0; i < m_shader->entry_point_count; i++)
-			if ((stage == ShaderStage::Pixel && m_shader->entry_points[i].exec_model == SpvExecutionModelFragment) || (stage == ShaderStage::Vertex && m_shader->entry_points[i].exec_model == SpvExecutionModelVertex) || (stage == ShaderStage::Compute && m_shader->entry_points[i].exec_model == SpvExecutionModelGLCompute) || (stage == ShaderStage::Geometry && m_shader->entry_points[i].exec_model == SpvExecutionModelGeometry) || (stage == ShaderStage::TessellationControl && m_shader->entry_points[i].exec_model == SpvExecutionModelTessellationControl) || (stage == ShaderStage::TessellationEvaluation && m_shader->entry_points[i].exec_model == SpvExecutionModelTessellationEvaluation)) {
+			if ((stage == ShaderStage::Pixel && m_shader->entry_points[i].exec_model == SpvExecutionModelFragment)
+				|| (stage == ShaderStage::Vertex && m_shader->entry_points[i].exec_model == SpvExecutionModelVertex)
+				|| (stage == ShaderStage::Compute && m_shader->entry_points[i].exec_model == SpvExecutionModelGLCompute)
+				|| (stage == ShaderStage::Geometry && m_shader->entry_points[i].exec_model == SpvExecutionModelGeometry)
+				|| (stage == ShaderStage::TessellationControl && m_shader->entry_points[i].exec_model == SpvExecutionModelTessellationControl)
+				|| (stage == ShaderStage::TessellationEvaluation && m_shader->entry_points[i].exec_model == SpvExecutionModelTessellationEvaluation)) {
 				return m_shader->entry_points[i].id;
 			}
 
@@ -2421,7 +2426,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		spvm_state_prepare(m_vm, fnMain);
 
 		if (m_stage == ShaderStage::Pixel && m_pixel != nullptr)
-			spvm_state_set_frag_coord(m_vm, m_pixel->Coordinate.x + 0.5f, m_pixel->Coordinate.y + 0.5f, 1.0f, 1.0f); // TODO: z and w components
+			spvm_state_set_frag_coord(m_vm, static_cast<float>(m_pixel->Coordinate.x) + 0.5f, static_cast<float>(m_pixel->Coordinate.y) + 0.5f, 1.0f, 1.0f); // TODO: z and w components
 
 		// move to cursor to first line in the function
 		spvm_state_step_into(m_vm);
@@ -2457,7 +2462,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		strcpy(data, expr.c_str());
 
 		m_watchExprs.push_back(data);
-		m_watchValues.push_back("");
+		m_watchValues.emplace_back("");
 
 		if (execute)
 			UpdateWatchValue(m_watchExprs.size() - 1);
@@ -2490,20 +2495,20 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 	void DebugInformation::RemoveVectorWatch(size_t index)
 	{
 		free(m_vectorWatchExprs[index]);
-		m_vectorWatchExprs.erase(m_vectorWatchExprs.begin() + index);
-		m_vectorWatchValues.erase(m_vectorWatchValues.begin() + index);
-		m_vectorWatchPositions.erase(m_vectorWatchPositions.begin() + index);
-		m_vectorWatchColor.erase(m_vectorWatchColor.begin() + index);
+		m_vectorWatchExprs.erase(m_vectorWatchExprs.begin() + static_cast<long>(index));
+		m_vectorWatchValues.erase(m_vectorWatchValues.begin() + static_cast<long>(index));
+		m_vectorWatchPositions.erase(m_vectorWatchPositions.begin() + static_cast<long>(index));
+		m_vectorWatchColor.erase(m_vectorWatchColor.begin() + static_cast<long>(index));
 	}
 	void DebugInformation::AddVectorWatch(const std::string& expr, glm::vec4 color, bool execute)
 	{
-		char* data = (char*)calloc(512, sizeof(char));
+		auto data = static_cast<char*>(calloc(512, sizeof(char)));
 		strcpy(data, expr.c_str());
 
 		m_vectorWatchExprs.push_back(data);
 		m_vectorWatchColor.push_back(color);
-		m_vectorWatchValues.push_back("");
-		m_vectorWatchPositions.push_back(glm::vec4(0.0f));
+		m_vectorWatchValues.emplace_back("");
+		m_vectorWatchPositions.emplace_back(0.0f);
 
 		if (execute)
 			UpdateVectorWatchValue(m_vectorWatchExprs.size() - 1);
@@ -2526,7 +2531,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 							actualValue[i] = exprVal->members[i].value.f;
 					} else {
 						for (int i = 0; i < exprVal->member_count; i++)
-							actualValue[i] = exprVal->members[i].value.s;
+							actualValue[i] = static_cast<float>(exprVal->members[i].value.s);
 					}
 					if (exprVal->member_count == 3)
 						actualValue.w = 0.0f;
@@ -2535,7 +2540,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 						actualValue[i] = exprVal->members[i].value.f;
 				} else {
 					for (int i = 0; i < exprVal->member_count; i++)
-						actualValue[i] = exprVal->members[i].value.s;
+						actualValue[i] = static_cast<float>(exprVal->members[i].value.s);
 				}
 			}
 			std::stringstream ss;
@@ -2642,8 +2647,8 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 
 		// geometry shader output
 		for (auto& prim : px.GeometryOutput) {
-			for (int i = 0; i < prim.Output.size(); i++) {
-				for (auto& out : prim.Output[i]) {
+			for (auto & i : prim.Output) {
+				for (auto& out : i) {
 					if (out.name) {
 						free(out.name);
 						out.name = nullptr;
@@ -2770,7 +2775,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 				copy.members = nullptr;
 
 				if (slot->name) {
-					copy.name = (spvm_string)calloc(1, strlen(slot->name) + 1);
+					copy.name = static_cast<spvm_string>(calloc(1, strlen(slot->name) + 1));
 					strcpy(copy.name, slot->name);
 				}
 
@@ -2788,7 +2793,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 	}
 	void DebugInformation::EndPrimitive()
 	{
-		m_pixel->GeometryOutput.push_back(GeometryShaderPrimitive());
+		m_pixel->GeometryOutput.emplace_back();
 	}
 
 	glm::vec4 DebugInformation::GetPositionThroughVertexShader(PipelineItem* pass, PipelineItem* item, const glm::vec3& pos)
@@ -2796,7 +2801,7 @@ spvm_word fnMain = spvm_state_get_result_location(worker, (char*)"main");
 		glm::vec4 ret(0.0f);
 
 		if (pass != nullptr && item != nullptr && pass->Type == PipelineItem::ItemType::ShaderPass) {
-			if (((pipe::ShaderPass*)pass->Data)->VSSPV.size() > 0) {
+			if (!static_cast<pipe::ShaderPass*>(pass->Data)->VSSPV.empty()) {
 				PixelInformation px;
 				px.Pass = pass;
 				px.Object = item;

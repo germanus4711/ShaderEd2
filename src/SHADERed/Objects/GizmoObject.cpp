@@ -130,13 +130,13 @@ namespace ed {
 		glBufferData(GL_ARRAY_BUFFER, sizeof(circleData), circleData, GL_STATIC_DRAW);
 
 		// configure input layout
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), static_cast<void*>(0));
 		glEnableVertexAttribArray(0);
 
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
 		glEnableVertexAttribArray(1);
 
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), reinterpret_cast<void*>(6 * sizeof(float)));
 		glEnableVertexAttribArray(2);
 
 		// unbind
@@ -210,7 +210,7 @@ namespace ed {
 		// handle dragging rotation controls
 		if (m_axisSelected != -1 && m_mode == 2) {
 			// rotate the object
-			float degNow = (float)glm::degrees(atan2(x - (vw / 2), y - (vh / 2)));
+			auto degNow = static_cast<float>(glm::degrees(atan2(x - (vw / 2), y - (vh / 2))));
 			float deg = degNow - m_clickDegrees;
 
 			if (Settings::Instance().Preview.GizmoRotationUI) {
@@ -223,7 +223,7 @@ namespace ed {
 
 			int snap = Settings::Instance().Preview.GizmoSnapRotation;
 			if (snap > 0)
-				m_tValue.x = (int)(deg / (float)snap) * snap;
+				m_tValue.x = deg / static_cast<float>(snap * snap);
 			else
 				m_tValue.x = deg;
 
@@ -232,17 +232,17 @@ namespace ed {
 			case 0:
 				m_rota->x = m_curValue.x + rad;
 				if (m_rota->x >= 2 * glm::pi<float>())
-					m_rota->x -= (int)(m_rota->x / (2 * glm::pi<float>())) * glm::pi<float>() * 2;
+					m_rota->x -= (m_rota->x / (2 * glm::pi<float>())) * glm::pi<float>() * 2;
 				break;
 			case 1:
 				m_rota->y = m_curValue.y + rad;
 				if (m_rota->y >= 2 * glm::pi<float>())
-					m_rota->y -= (int)(m_rota->y / (2 * glm::pi<float>())) * 2 * glm::pi<float>();
+					m_rota->y -= (m_rota->y / (2 * glm::pi<float>())) * 2 * glm::pi<float>();
 				break;
 			case 2:
 				m_rota->z = m_curValue.z + rad;
 				if (m_rota->z >= 2 * glm::pi<float>())
-					m_rota->z -= (int)(m_rota->z / (2 * glm::pi<float>())) * 2 * glm::pi<float>();
+					m_rota->z -= (m_rota->z / (2 * glm::pi<float>())) * 2 * glm::pi<float>();
 				break;
 			default:;
 			}
@@ -250,8 +250,8 @@ namespace ed {
 
 		// handle hovering over controls
 		m_axisHovered = -1;
-		m_vw = (float)vw;
-		m_vh = (float)vh;
+		m_vw = static_cast<float>(vw);
+		m_vh = static_cast<float>(vh);
 
 		float scale = glm::length(*m_trans - glm::vec3(SystemVariableManager::Instance().GetCamera()->GetPosition())) / GIZMO_SCALE_FACTOR;
 		if (scale == 0.0f)
@@ -268,8 +268,8 @@ namespace ed {
 		// Z axis
 		glm::mat4 zWorld = glm::translate(glm::mat4(1), *m_trans) * glm::rotate(glm::mat4(1), glm::half_pi<float>(), glm::vec3(1, 0, 0));
 
-		float mouseX = (float)x / ((float)vw * 0.5f) - 1.0f;
-		float mouseY = (float)y / ((float)vh * 0.5f) - 1.0f;
+		float mouseX = static_cast<float>(x) / (static_cast<float>(vw) * 0.5f) - 1.0f;
+		float mouseY = static_cast<float>(y) / (static_cast<float>(vh) * 0.5f) - 1.0f;
 
 		glm::mat4 proj = SystemVariableManager::Instance().GetProjectionMatrix();
 		glm::mat4 view = SystemVariableManager::Instance().GetCamera()->GetMatrix();

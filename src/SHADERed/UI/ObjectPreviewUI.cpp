@@ -91,7 +91,7 @@ namespace ed {
 			std::string& name = item->Name;
 			m_zoom[i].SetCurrentMousePosition(SystemVariableManager::Instance().GetMousePosition());
 
-			if (ImGui::Begin((name + "###objprev" + std::to_string(i)).c_str(), (bool*)&m_isOpen[i])) {
+			if (ImGui::Begin((name + "###objprev" + std::to_string(i)).c_str(), reinterpret_cast<bool*>(&m_isOpen[i]))) {
 				ImVec2 aSize = ImGui::GetContentRegionAvail();
 
 				if (item->Plugin != nullptr) {
@@ -187,12 +187,12 @@ namespace ed {
 						item->Sound->GetSamples(m_samplesTempBuffer);
 						double* fftData = m_audioAnalyzer.FFT(m_samplesTempBuffer);
 
-						for (int i = 0; i < AudioAnalyzer::SampleCount; i++) {
-							short s = (short)(m_samplesTempBuffer[i * 2] + m_samplesTempBuffer[i * 2 + 1]) / 2;
-							float sf = (float)s / (float)INT16_MAX;
+						for (int sample_index = 0; sample_index < AudioAnalyzer::SampleCount; sample_index++) {
+							auto s = static_cast<short>((m_samplesTempBuffer[sample_index * 2] + m_samplesTempBuffer[sample_index * 2 + 1]) / 2);
+							float sf = static_cast<float>(s) / static_cast<float>(INT16_MAX);
 
-							m_fft[i] = (float)fftData[i / 2];
-							m_samples[i] = sf * 0.5f + 0.5f;
+							m_fft[sample_index] = static_cast<float>(fftData[sample_index / 2]);
+							m_samples[sample_index] = sf * 0.5f + 0.5f;
 						}
 
 						ImGui::PlotHistogram("Frequencies", m_fft, IM_ARRAYSIZE(m_fft), 0, nullptr, 0.0f, 1.0f, ImVec2(0, 80));
@@ -309,55 +309,51 @@ namespace ed {
 							float yAdvance = ImGui::GetTextLineHeightWithSpacing() + 2 * ImGui::GetStyle().FramePadding.y + 2.0f;
 							ImVec2 contentSize = ImGui::GetWindowContentRegionMax();
 
-							ImGui::BeginChild("##buf_container", ImVec2(0, (rows + 1) * yAdvance));
+							ImGui::BeginChild("##buf_container", ImVec2(0, static_cast<float>(rows + 1) * yAdvance));
 
-							ImGui::Columns(m_cachedBufFormat[i].size() + 1);
+							ImGui::Columns(static_cast<int>(m_cachedBufFormat[i].size()) + 1);
 							if (!m_initRowSize) { // imgui hax
 								ImGui::SetColumnWidth(0, Settings::Instance().CalculateSize(50.0f));
 								m_initRowSize = true;
 							}
 							ImGui::Text("Row");
 							ImGui::NextColumn();
-							for (int j = 0; j < m_cachedBufFormat[i].size(); j++) {
-								ImGui::Text("%s", VARIABLE_TYPE_NAMES[(int)m_cachedBufFormat[i][j]]);
+							for (auto& j : m_cachedBufFormat[i]) {
+								ImGui::Text("%s", VARIABLE_TYPE_NAMES[static_cast<int>(j)]);
 								ImGui::NextColumn();
 							}
 							ImGui::Separator();
 
-							int rowNo = std::max<int>(0, (int)floor(scrollY / yAdvance) - 5);
-							int rowMax = std::max<int>(0, std::min<int>((int)rows, rowNo + (int)floor((scrollY + contentSize.y + offsetY) / yAdvance) + 10));
+							int rowNo = std::max<int>(0, static_cast<int>(floor(scrollY / yAdvance)) - 5);
+							int rowMax = std::max<int>(0, std::min<int>((int)rows, rowNo + static_cast<int>(floor((scrollY + contentSize.y + offsetY) / yAdvance)) + 10));
 							float cursorY = ImGui::GetCursorPosY();
 
 							for (int j = rowNo; j < rowMax; j++) {
 								ImGui::PushID(j);
 
-								ImGui::SetCursorPosY(cursorY + j * yAdvance);
+								ImGui::SetCursorPosY(cursorY + static_cast<float>(j) * yAdvance);
 								ImGui::Text("%d", j + 1);
 								ImGui::NextColumn();
 								int curColOffset = 0;
 								for (int k = 0; k < m_cachedBufFormat[i].size(); k++) {
 									ImGui::PushID(k);
-									ImGui::SetCursorPosY(cursorY + j * yAdvance);
+									ImGui::SetCursorPosY(cursorY + static_cast<float>(j) * yAdvance);
 
 									int dOffset = j * perRow + curColOffset;
-									if (m_drawBufferElement(j, k, (void*)(((char*)buf->Data) + dOffset), m_cachedBufFormat[i][k])) {
+									if (m_drawBufferElement(j, k, (void*)(static_cast<char*>(buf->Data) + dOffset), m_cachedBufFormat[i][k])) {
 										glBindBuffer(GL_UNIFORM_BUFFER, buf->ID);
 										glBufferData(GL_UNIFORM_BUFFER, buf->Size, buf->Data, GL_STATIC_DRAW); // allocate 0 bytes of memory
 										glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 										m_data->Parser.ModifyProject();
 									}
-
 									curColOffset += ShaderVariable::GetSize(m_cachedBufFormat[i][k], true);
 									ImGui::NextColumn();
 									ImGui::PopID();
 								}
-
 								ImGui::PopID();
 							}
-
 							ImGui::Columns(1);
-
 							ImGui::EndChild();
 						}
 
@@ -440,8 +436,8 @@ namespace ed {
 								auto drawList = ImGui::GetWindowDrawList();
 								static char pxCoord[32] = { 0 };
 
-								for (int i = 0; i < pixelList.size(); i++) {
-									if (pixelList[i].RenderTexture->Name == item->Name && pixelList[i].Fetched) { // we only care about window's pixel info here
+								for (auto& pixel_info : pixelList) {
+									if (pixel_info.RenderTexture->Name == item->Name && pixel_info.Fetched) { // we only care about window's pixel info here
 
 										if (Settings::Instance().Debug.PrimitiveOutline) {
 											ImGui::SetCursorPosX(posX);
@@ -449,7 +445,7 @@ namespace ed {
 
 											ImVec2 uiPos = ImGui::GetCursorScreenPos();
 
-											DebuggerOutline::RenderPrimitiveOutline(pixelList[i], glm::vec2(uiPos.x, uiPos.y), glm::vec2(aSize.x, aSize.y), zPos, zSize);
+											DebuggerOutline::RenderPrimitiveOutline(pixel_info, glm::vec2(uiPos.x, uiPos.y), glm::vec2(aSize.x, aSize.y), zPos, zSize);
 										}
 										if (Settings::Instance().Debug.PixelOutline) {
 											ImGui::SetCursorPosX(posX);
@@ -457,7 +453,7 @@ namespace ed {
 
 											ImVec2 uiPos = ImGui::GetCursorScreenPos();
 
-											DebuggerOutline::RenderPixelOutline(pixelList[i], glm::vec2(uiPos.x, uiPos.y), glm::vec2(aSize.x, aSize.y), zPos, zSize);
+											DebuggerOutline::RenderPixelOutline(pixel_info, glm::vec2(uiPos.x, uiPos.y), glm::vec2(aSize.x, aSize.y), zPos, zSize);
 										}
 									}
 								}
@@ -569,15 +565,14 @@ namespace ed {
 		if (itemSize != m_lastRTSize[ind]) {
 			m_lastRTSize[ind] = itemSize;
 			gl::FreeSimpleFramebuffer(m_zoomFBO[ind], m_zoomColor[ind], m_zoomDepth[ind]);
-			m_zoomFBO[ind] = gl::CreateSimpleFramebuffer(itemSize.x, itemSize.y, m_zoomColor[ind], m_zoomDepth[ind]);
-
-			m_zoom[ind].RebuildVBO(itemSize.x, itemSize.y);
+			m_zoomFBO[ind] = gl::CreateSimpleFramebuffer(static_cast<int>(itemSize.x), static_cast<int>(itemSize.y), m_zoomColor[ind], m_zoomDepth[ind]);
+			m_zoom[ind].RebuildVBO(static_cast<int>(itemSize.x), static_cast<int>(itemSize.y));
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, m_zoomFBO[ind]);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-		glViewport(0, 0, itemSize.x, itemSize.y);
+		glViewport(0, 0, static_cast<int>(itemSize.x), static_cast<int>(itemSize.y));
 
 		if (m_zoom[ind].IsSelecting())
 			m_zoom[ind].Render();

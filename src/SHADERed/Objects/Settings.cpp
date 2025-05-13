@@ -124,7 +124,8 @@ namespace ed {
 		General.AutoScale = ini.GetBoolean("general", "autoscale", true);
 		General.Tips = ini.GetBoolean("general", "tips", false);
 		DPIScale = static_cast<float>(ini.GetReal("general", "uiscale", 1.0f));
-		strcpy(General.Font, ini.Get("general", "font", "data/NotoSans.ttf").c_str());
+		// strcpy(General.Font, ini.Get("general", "font", "data/NotoSans.ttf").c_str());
+		strcpy(General.Font, ini.Get("general", "font", "data/JetBrainsMonoNL-Regular.ttf").c_str());
 		General.FontSize = static_cast<int>(ini.GetInteger("general", "fontsize", 8));
 		m_parseExt(ini.Get("general", "hlslext", "hlsl"), General.HLSLExtensions);
 		m_parseExt(ini.Get("general", "vkext", "vk"), General.VulkanGLSLExtensions);
@@ -132,7 +133,8 @@ namespace ed {
 
 		Editor.SmartPredictions = ini.GetBoolean("editor", "smartpred", true);
 		Editor.ActiveSmartPredictions = ini.GetBoolean("editor", "activesmartpred", false);
-		strcpy(Editor.Font, ini.Get("editor", "font", "data/inconsolata.ttf").c_str());
+		// strcpy(Editor.Font, ini.Get("editor", "font", "data/inconsolata.ttf").c_str());
+		strcpy(Editor.Font, ini.Get("editor", "font", "data/JetBrainsMonoNL-Light.ttf").c_str());
 		Editor.FontSize = static_cast<int>(ini.GetInteger("editor", "fontsize", 8));
 		Editor.ShowWhitespace = ini.GetBoolean("editor", "whitespace", false);
 		Editor.HiglightCurrentLine = ini.GetBoolean("editor", "highlightline", true);

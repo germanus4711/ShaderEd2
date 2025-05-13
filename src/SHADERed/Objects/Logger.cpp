@@ -21,18 +21,18 @@ namespace ed {
 		data << "[" << std::setw(2) << std::setfill('0') << ltm->tm_hour << ":" << std::setw(2) << std::setfill('0') << ltm->tm_min << ":" << std::setw(2) << std::setfill('0') << ltm->tm_sec << "] ";
 
 		// file and line
-		if (file.size() != 0)
+		if (!file.empty())
 			data << "<" << file;
 
 		if (line != -1) {
-			if (file.size() == 0)
+			if (file.empty())
 				data << "<";
 			else
 				data << " ";
 			data << "at line " << line;
 		}
 
-		if (file.size() != 0 || line != -1)
+		if (!file.empty() || line != -1)
 			data << "> ";
 
 		// error

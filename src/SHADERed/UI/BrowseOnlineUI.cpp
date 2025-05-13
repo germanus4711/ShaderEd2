@@ -95,10 +95,10 @@ namespace ed {
 		ImGui::PushItemWidth(-Settings::Instance().CalculateSize(110));
 		ImGui::InputText("##online_username", m_onlineUsername, sizeof(m_onlineUsername));
 		ImGui::PopItemWidth();
-		int endY = (int)ImGui::GetCursorPosY();
+		int endY = static_cast<int>(ImGui::GetCursorPosY());
 
-		ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - Settings::Instance().CalculateSize(90), startY));
-		if (ImGui::Button("SEARCH", ImVec2(Settings::Instance().CalculateSize(70), endY - startY))) {
+		ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() - Settings::Instance().CalculateSize(90), static_cast<float>(startY)));
+		if (ImGui::Button("SEARCH", ImVec2(Settings::Instance().CalculateSize(70), static_cast<float>(endY - startY)))) {
 			if (m_onlineIsShader)
 				m_onlineShaderPage = 0;
 			else if (m_onlineIsPlugin)
@@ -154,7 +154,7 @@ namespace ed {
 
 						ImGui::PushID(i);
 						if (ImGui::Button("OPEN")) {
-							CodeEditorUI* codeUI = dynamic_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code));
+							auto* codeUI = dynamic_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code));
 							codeUI->SetTrackFileChanges(false);
 
 							bool ret = m_data->API.DownloadShaderProject(shaderInfo.ID);
@@ -251,9 +251,8 @@ namespace ed {
 
 							const std::vector<std::string>& notLoaded = Settings::Instance().Plugins.NotLoaded;
 
-							for (int j = 0; j < notLoaded.size(); j++) {
-								std::string nameLower = notLoaded[j];
-								std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
+							for (auto nameLower : notLoaded) {
+									std::transform(nameLower.begin(), nameLower.end(), nameLower.begin(), ::tolower);
 
 								if (pluginLower == nameLower) {
 									isInstalled = true;

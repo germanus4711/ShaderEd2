@@ -27,37 +27,37 @@ namespace ed {
 	int MessageStack::GetGroupWarningMsgCount(const std::string& group)
 	{
 		int cnt = 0;
-		for (int i = 0; i < m_msgs.size(); i++)
-			if (m_msgs[i].Group == group && m_msgs[i].MType == ed::MessageStack::Type::Warning)
+		for (auto & m_msg : m_msgs)
+			if (m_msg.Group == group && m_msg.MType == ed::MessageStack::Type::Warning)
 				cnt++;
 		return cnt;
 	}
 	int MessageStack::GetErrorAndWarningMsgCount()
 	{
 		int cnt = 0;
-		for (int i = 0; i < m_msgs.size(); i++)
-			if (m_msgs[i].MType == ed::MessageStack::Type::Warning || m_msgs[i].MType == ed::MessageStack::Type::Error)
+		for (auto & m_msg : m_msgs)
+			if (m_msg.MType == ed::MessageStack::Type::Warning || m_msg.MType == ed::MessageStack::Type::Error)
 				cnt++;
 		return cnt;
 	}
 	int MessageStack::GetGroupErrorAndWarningMsgCount(const std::string& group)
 	{
 		int cnt = 0;
-		for (int i = 0; i < m_msgs.size(); i++)
-			if ((m_msgs[i].MType == ed::MessageStack::Type::Warning || m_msgs[i].MType == ed::MessageStack::Type::Error) && m_msgs[i].Group == group)
+		for (auto & m_msg : m_msgs)
+			if ((m_msg.MType == ed::MessageStack::Type::Warning || m_msg.MType == ed::MessageStack::Type::Error) && m_msg.Group == group)
 				cnt++;
 		return cnt;
 	}
 	void MessageStack::RenameGroup(const std::string& group, const std::string& newName)
 	{
-		for (int i = 0; i < m_msgs.size(); i++)
-			if (m_msgs[i].Group == group)
-				m_msgs[i].Group = newName;
+		for (auto & m_msg : m_msgs)
+			if (m_msg.Group == group)
+				m_msg.Group = newName;
 	}
 	bool MessageStack::CanRenderPreview()
 	{
-		for (int i = 0; i < m_msgs.size(); i++)
-			if (m_msgs[i].MType == Type::Error)
+		for (auto & m_msg : m_msgs)
+			if (m_msg.MType == Type::Error)
 				return false;
 		return true;
 	}

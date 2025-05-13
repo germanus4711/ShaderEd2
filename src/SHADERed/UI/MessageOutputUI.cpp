@@ -42,14 +42,12 @@ namespace ed {
 
 						if (pass != nullptr) {
 							CodeEditorUI* codeUI = (reinterpret_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code)));
-							if (pass->Type == PipelineItem::ItemType::ShaderPass && m->Shader != ShaderStage::Count)
-								codeUI->Open(pass, m->Shader);
-							else if (pass->Type == PipelineItem::ItemType::ComputePass && m->Shader != ShaderStage::Count)
-								codeUI->Open(pass, m->Shader);
-							else if (pass->Type == PipelineItem::ItemType::AudioPass && m->Shader != ShaderStage::Count)
+							if ((pass->Type == PipelineItem::ItemType::ShaderPass && m->Shader != ShaderStage::Count)
+								|| (pass->Type == PipelineItem::ItemType::ComputePass && m->Shader != ShaderStage::Count)
+								|| (pass->Type == PipelineItem::ItemType::AudioPass && m->Shader != ShaderStage::Count))
 								codeUI->Open(pass, m->Shader);
 							else if (pass->Type == PipelineItem::ItemType::PluginItem) {
-								pipe::PluginItemData* plData = static_cast<pipe::PluginItemData*>(pass->Data);
+								auto* plData = static_cast<pipe::PluginItemData*>(pass->Data);
 								plData->Owner->PipelineItem_OpenInEditor(plData->Type, plData->PluginData);
 							}
 

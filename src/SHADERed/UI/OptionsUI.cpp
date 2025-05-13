@@ -133,7 +133,7 @@ namespace ed {
 		Logger::Get().Log("Applying UI theme to SHADERed");
 
 		std::string theme = Settings::Instance().Theme;
-		CodeEditorUI* editor = dynamic_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code));
+		auto* editor = dynamic_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code));
 
 		if (theme == "Dark") {
 			ImGuiStyle& style = ImGui::GetStyle();
@@ -414,7 +414,7 @@ namespace ed {
 					exists = i;
 					break;
 				}
-			if (exists == -1 && hlslExtEntryStr.size() >= 1)
+			if (exists == -1 && !hlslExtEntryStr.empty())
 				settings->General.HLSLExtensions.push_back(hlslExtEntryStr);
 		}
 		ImGui::SameLine();
@@ -451,7 +451,7 @@ namespace ed {
 					exists = i;
 					break;
 				}
-			if (exists == -1 && vkExtEntryStr.size() >= 1)
+			if (exists == -1 && !vkExtEntryStr.empty())
 				settings->General.VulkanGLSLExtensions.push_back(vkExtEntryStr);
 		}
 		ImGui::SameLine();
@@ -489,20 +489,20 @@ namespace ed {
 				if (ImGui::Button(("ADD##optg_btnadd" + langName + "ext").c_str())) {
 					int exists = -1;
 					std::string hlslExtEntryStr(plExtEntry);
-					for (int i = 0; i < extVec.size(); i++)
-						if (extVec[i] == hlslExtEntryStr) {
-							exists = i;
+					for (int vector_index = 0; vector_index < extVec.size(); vector_index++)
+						if (extVec[vector_index] == hlslExtEntryStr) {
+							exists = vector_index;
 							break;
 						}
-					if (exists == -1 && hlslExtEntryStr.size() >= 1)
+					if (exists == -1 && !hlslExtEntryStr.empty())
 						extVec.push_back(hlslExtEntryStr);
 				}
 				ImGui::SameLine();
 				if (ImGui::Button(("REMOVE##optg_btnrem" + langName + "ext").c_str())) {
 					std::string extEntryStr(plExtEntry);
-					for (int i = 0; i < extVec.size(); i++)
-						if (extVec[i] == extEntryStr) {
-							extVec.erase(extVec.begin() + i);
+					for (int vector_index = 0; vector_index < extVec.size(); vector_index++)
+						if (extVec[vector_index] == extEntryStr) {
+							extVec.erase(extVec.begin() + vector_index);
 							break;
 						}
 				}
@@ -544,7 +544,7 @@ namespace ed {
 				// get dpi
 				float dpi;
 				int wndDisplayIndex = SDL_GetWindowDisplayIndex(m_ui->GetSDLWindow());
-				SDL_GetDisplayDPI(wndDisplayIndex, NULL, &dpi, NULL);
+				SDL_GetDisplayDPI(wndDisplayIndex, nullptr, &dpi, nullptr);
 				dpi /= 96.0f;
 
 				if (dpi <= 0.0f) dpi = 1.0f;
@@ -752,7 +752,7 @@ namespace ed {
 
 			if (m_selectedShortcut == i) {
 				std::string txt = m_getShortcutString();
-				if (txt.size() == 0)
+				if (txt.empty())
 					txt = "-- press keys --";
 
 				ImGui::Text("%s", txt.c_str());
@@ -919,7 +919,7 @@ namespace ed {
 		ImGui::Text("Plugins that aren't loaded:");
 
 		ImGui::PushItemWidth(-1);
-		ImGui::ListBox("##optpl_notloaded", &m_pluginNotLoadedLB, vector_getter, (void*)(&m_pluginsNotLoaded), m_pluginsNotLoaded.size(), 10);
+		ImGui::ListBox("##optpl_notloaded", &m_pluginNotLoadedLB, vector_getter, (void*)(&m_pluginsNotLoaded), static_cast<int>(m_pluginsNotLoaded.size()), 10);
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
 

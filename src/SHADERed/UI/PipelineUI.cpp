@@ -18,7 +18,6 @@
 #include <imgui/imgui_internal.h>
 #include <algorithm>
 
-#define HARRAYSIZE(a) (sizeof(a) / sizeof(*a))
 #define PIPELINE_SHADER_PASS_INDENT Settings::Instance().CalculateSize(95)
 #define PIPELINE_ITEM_INDENT Settings::Instance().CalculateSize(105)
 #define BUTTON_ICON_SIZE ImVec2(Settings::Instance().CalculateSize(22.5f), 0)
@@ -156,7 +155,7 @@ namespace ed {
 		if (ImGui::BeginPopupModal("Debug compute shader")) {
 			ImGui::Text("Global thread ID:");
 			ImGui::SameLine();
-			if (ImGui::InputScalarN("##dbg_thread_id", ImGuiDataType_U32, (void*)m_thread, 3, 0, reinterpret_cast<const void*>(1))) {
+			if (ImGui::InputScalarN("##dbg_thread_id", ImGuiDataType_U32, (void*)m_thread, 3, nullptr, reinterpret_cast<const void*>(1))) {
 				m_thread[0] = std::min<int>(static_cast<int>(m_thread[0]), m_localSizeX * m_groupsX - 1);
 				m_thread[1] = std::min<int>(static_cast<int>(m_thread[1]), m_localSizeY * m_groupsY - 1);
 				m_thread[2] = std::min<int>(static_cast<int>(m_thread[2]), m_localSizeZ * m_groupsZ - 1);
@@ -183,7 +182,7 @@ namespace ed {
 				auto pass = static_cast<pipe::ComputePass*>(m_modalItem->Data);
 				// TODO: plugins?
 
-				CodeEditorUI* codeUI = (reinterpret_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code)));
+				auto codeUI = (reinterpret_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code)));
 				codeUI->StopDebugging();
 				codeUI->Open(m_modalItem, ShaderStage::Compute);
 				TextEditor* editor = codeUI->Get(m_modalItem, ShaderStage::Compute);
@@ -296,7 +295,7 @@ namespace ed {
 
 		// confirm delete
 		ImGui::SetNextWindowSize(ImVec2(Settings::Instance().CalculateSize(400), Settings::Instance().CalculateSize(120)), ImGuiCond_Once);
-		if (ImGui::BeginPopupModal("Delete##pui_item_delete", 0, ImGuiWindowFlags_NoResize)) {
+		if (ImGui::BeginPopupModal("Delete##pui_item_delete", nullptr, ImGuiWindowFlags_NoResize)) {
 			ImGui::Text("Are you sure that you want to delete item \"%s\"?", m_modalItem->Name);
 
 			if (ImGui::Button("Yes")) {
@@ -742,7 +741,7 @@ namespace ed {
 			ImGui::PushItemWidth(-ImGui::GetStyle().FramePadding.x);
 			const char* valueComboPreview = ATTRIBUTE_VALUE_NAMES[(int)el.Value];
 			if (ImGui::BeginCombo("##value", valueComboPreview)) {
-				for (int n = 0; n < HARRAYSIZE(ATTRIBUTE_VALUE_NAMES); n++) {
+				for (int n = 0; n < std::size(ATTRIBUTE_VALUE_NAMES); n++) {
 					bool is_selected = (n == (int)el.Value);
 					if (ImGui::Selectable(ATTRIBUTE_VALUE_NAMES[n], is_selected)) {
 						el.Value = (InputLayoutValue)n;
@@ -1058,11 +1057,11 @@ namespace ed {
 			// add if it doesnt exist
 			if (!exists) {
 				if (isCompute)
-					((pipe::ComputePass*)itemData)->Variables.AddCopy(iVariable);
+					static_cast<pipe::ComputePass*>(itemData)->Variables.AddCopy(iVariable);
 				else if (isAudio)
-					((pipe::AudioPass*)itemData)->Variables.AddCopy(iVariable);
+					static_cast<pipe::AudioPass*>(itemData)->Variables.AddCopy(iVariable);
 				else
-					((pipe::ShaderPass*)itemData)->Variables.AddCopy(iVariable);
+					static_cast<pipe::ShaderPass*>(itemData)->Variables.AddCopy(iVariable);
 
 				iVariable = ShaderVariable(ShaderVariable::ValueType::Float1, "var", ed::SystemShaderVariable::None);
 				iValueType = ShaderVariable::ValueType::Float1;
@@ -1076,7 +1075,7 @@ namespace ed {
 
 		/* TYPE */
 		ImGui::PushItemWidth(-ImGui::GetStyle().FramePadding.x);
-		if (ImGui::Combo("##createVarType", reinterpret_cast<int*>(&iValueType), isGLSL ? VARIABLE_TYPE_NAMES_GLSL : VARIABLE_TYPE_NAMES, HARRAYSIZE(VARIABLE_TYPE_NAMES))) {
+		if (ImGui::Combo("##createVarType", reinterpret_cast<int*>(&iValueType), isGLSL ? VARIABLE_TYPE_NAMES_GLSL : VARIABLE_TYPE_NAMES, std::size(VARIABLE_TYPE_NAMES))) {
 			if (iValueType != iVariable.GetType()) {
 				ed::ShaderVariable newVariable(iValueType);
 				memcpy(newVariable.Name, iVariable.Name, strlen(iVariable.Name));

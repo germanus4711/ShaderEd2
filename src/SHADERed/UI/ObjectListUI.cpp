@@ -71,7 +71,7 @@ namespace ed {
 			if (ImGui::Selectable(itemText.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick)) {
 				// open preview on double click
 				if (ImGui::IsMouseDoubleClicked(0) && (hasPluginExtendedPreview || !isPluginOwner) && !isImg3D)
-					static_cast<ObjectPreviewUI*>(m_ui->Get(ViewID::ObjectPreview))->Open(oItem);
+					dynamic_cast<ObjectPreviewUI*>(m_ui->Get(ViewID::ObjectPreview))->Open(oItem);
 			}
 
 			if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
@@ -101,7 +101,7 @@ namespace ed {
 					m_cubePrev.Draw(tex);
 					ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(m_cubePrev.GetTexture())), ImVec2(IMAGE_CONTEXT_WIDTH, imgWH * IMAGE_CONTEXT_WIDTH), ImVec2(0, 1), ImVec2(1, 0));
 				} else if (oItem->Type == ObjectType::Texture3D || oItem->Type == ObjectType::Image3D) {
-					m_tex3DPrev.Draw(tex, IMAGE_CONTEXT_WIDTH, (int)imgWH * IMAGE_CONTEXT_WIDTH);
+					m_tex3DPrev.Draw(tex, IMAGE_CONTEXT_WIDTH, static_cast<int>(imgWH * IMAGE_CONTEXT_WIDTH));
 					ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(m_tex3DPrev.GetTexture())), ImVec2(IMAGE_CONTEXT_WIDTH, imgWH * IMAGE_CONTEXT_WIDTH));
 				} else if (!isBuf && !isImg3D && !isPluginOwner)
 					ImGui::Image(reinterpret_cast<void*>(static_cast<intptr_t>(tex)), ImVec2(IMAGE_CONTEXT_WIDTH, imgWH * IMAGE_CONTEXT_WIDTH), ImVec2(0, 1), ImVec2(1, 0));
@@ -159,7 +159,7 @@ namespace ed {
 					ImGui::EndMenu();
 				}
 
-				if (bool hasPluginContext = isPluginOwner && pobj->Owner->Object_HasContext(pobj->Type)) {
+				if (isPluginOwner && pobj->Owner->Object_HasContext(pobj->Type)) {
 					ImGui::Separator();
 					pobj->Owner->Object_ShowContext(pobj->Type, pobj->Data);
 					ImGui::Separator();
@@ -179,7 +179,7 @@ namespace ed {
 
 				if (oItem->Sound != nullptr) {
 					bool isMuted = oItem->SoundMuted;
-					if (ImGui::MenuItem("Mute", (const char*)0, &isMuted)) {
+					if (ImGui::MenuItem("Mute", (const char*)nullptr, &isMuted)) {
 						if (isMuted)
 							m_data->Objects.Mute(oItem);
 						else

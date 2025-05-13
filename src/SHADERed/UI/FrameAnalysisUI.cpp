@@ -54,7 +54,7 @@ namespace ed {
 		else if (m_histogramType == 3)
 			histogramData = m_histogramB;
 
-		ImGui::PlotHistogram("##testhistogram", histogramData, 256, 0, 0, 0.0f, FLT_MAX, ImVec2(ImGui::GetContentRegionAvailWidth(), 256));
+		ImGui::PlotHistogram("##testhistogram", histogramData, 256, 0, nullptr, 0.0f, FLT_MAX, ImVec2(ImGui::GetContentRegionAvailWidth(), 256));
 		ImGui::NewLine();
 
 		ImGui::TextWrapped("Miscellaneous");
@@ -85,7 +85,7 @@ namespace ed {
 
 				ImGui::PushID(pxId);
 
-				static_cast<PixelInspectUI*>(m_ui->Get(ViewID::PixelInspect))->RenderPixelInfo(pixel, m_pixelHeights[pxId]);
+				dynamic_cast<PixelInspectUI*>(m_ui->Get(ViewID::PixelInspect))->RenderPixelInfo(pixel, m_pixelHeights[pxId]);
 
 				ImGui::PopID();
 				pxId++;

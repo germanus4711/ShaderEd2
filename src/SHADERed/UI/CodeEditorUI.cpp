@@ -631,7 +631,10 @@ namespace ed {
 		}
 
 		std::string snippetsFileLoc = Settings::Instance().ConvertPath("data/snippets.xml");
-		auto did_save = doc.save_file(snippetsFileLoc.c_str());
+		if (!doc.save_file(snippetsFileLoc.c_str())) {
+			std::cout <<  "Error saving the snippet!";
+		}
+		// auto did_save = doc.save_file(snippetsFileLoc.c_str());
 	}
 	void CodeEditorUI::AddSnippet(const std::string& lang, const std::string& display, const std::string& search, const std::string& code)
 	{
@@ -705,13 +708,11 @@ namespace ed {
 							else if (m_shaderStage[j] == ShaderStage::TessellationEvaluation)
 								tes = m_editor[j]->GetText();
 							m_data->Renderer.RecompileFromSource(m_items[j]->Name, vs, ps, gs, tcs, tes);
-						} else if (m_items[j]->Type == PipelineItem::ItemType::ComputePass)
-							m_data->Renderer.RecompileFromSource(m_items[j]->Name, m_editor[j]->GetText());
-						else if (m_items[j]->Type == PipelineItem::ItemType::AudioPass)
+						} else if ((m_items[j]->Type == PipelineItem::ItemType::ComputePass) || (m_items[j]->Type == PipelineItem::ItemType::AudioPass))
 							m_data->Renderer.RecompileFromSource(m_items[j]->Name, m_editor[j]->GetText());
 						else if (m_items[j]->Type == PipelineItem::ItemType::PluginItem) {
 							std::string pluginCode = m_editor[j]->GetText();
-							static_cast<pipe::PluginItemData*>(m_items[j]->Data)->Owner->HandleRecompileFromSource(m_items[j]->Name, (int)m_shaderStage[j], pluginCode.c_str(), static_cast<int>(pluginCode.size()));
+							static_cast<pipe::PluginItemData*>(m_items[j]->Data)->Owner->HandleRecompileFromSource(m_items[j]->Name, static_cast<int>(m_shaderStage[j]), pluginCode.c_str(), static_cast<int>(pluginCode.size()));
 						}
 
 						break;
@@ -743,13 +744,11 @@ namespace ed {
 							else if (m_shaderStage[j] == ShaderStage::TessellationEvaluation)
 								tes = std::string(tempText, contentLength);
 							m_data->Renderer.RecompileFromSource(m_items[j]->Name, vs, ps, gs, tcs, tes);
-						} else if (m_items[j]->Type == PipelineItem::ItemType::ComputePass)
-							m_data->Renderer.RecompileFromSource(m_items[j]->Name, std::string(tempText, contentLength));
-						else if (m_items[j]->Type == PipelineItem::ItemType::AudioPass)
+						} else if ((m_items[j]->Type == PipelineItem::ItemType::ComputePass) || (m_items[j]->Type == PipelineItem::ItemType::AudioPass))
 							m_data->Renderer.RecompileFromSource(m_items[j]->Name, std::string(tempText, contentLength));
 						else if (m_items[j]->Type == PipelineItem::ItemType::PluginItem) {
 							auto pluginCode = std::string(tempText, contentLength);
-							static_cast<pipe::PluginItemData*>(m_items[j]->Data)->Owner->HandleRecompileFromSource(m_items[j]->Name, (int)m_shaderStage[j], pluginCode.c_str(), pluginCode.size());
+							static_cast<pipe::PluginItemData*>(m_items[j]->Data)->Owner->HandleRecompileFromSource(m_items[j]->Name, (int)m_shaderStage[j], pluginCode.c_str(), static_cast<int>(pluginCode.size()));
 						}
 
 						break;
@@ -790,8 +789,8 @@ namespace ed {
 			editor->SetFunctionTooltips(Settings::Instance().Editor.FunctionTooltips);
 			editor->SetFunctionDeclarationTooltip(Settings::Instance().Editor.FunctionDeclarationTooltips);
 			editor->SetUIScale(Settings::Instance().TempScale);
-			editor->SetUIFontSize(Settings::Instance().General.FontSize);
-			editor->SetEditorFontSize(Settings::Instance().Editor.FontSize);
+			editor->SetUIFontSize(static_cast<float>(Settings::Instance().General.FontSize));
+			editor->SetEditorFontSize(static_cast<float>(Settings::Instance().Editor.FontSize));
 			editor->SetActiveAutocomplete(Settings::Instance().Editor.ActiveSmartPredictions);
 			editor->SetColorizerEnable(Settings::Instance().Editor.SyntaxHighlighting);
 			editor->SetScrollbarMarkers(Settings::Instance().Editor.ScrollbarMarkers);
@@ -1051,7 +1050,7 @@ namespace ed {
 			editor->OnCtrlAltClick = [&](TextEditor* tEdit, const std::string& keyword, TextEditor::Coordinates coords) {
 				for (int t = 0; t < m_editor.size(); t++)
 					if (m_editor[t] == tEdit) {
-						static_cast<PreviewUI*>(m_ui->Get(ViewID::Preview))->SetVariableValue(m_items[t], keyword, coords.mLine);
+						dynamic_cast<PreviewUI*>(m_ui->Get(ViewID::Preview))->SetVariableValue(m_items[t], keyword, coords.mLine);
 						break;
 					}
 			};

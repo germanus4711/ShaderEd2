@@ -56,12 +56,12 @@ namespace ed {
 		// TODO: this is only a temporary fix for non-resizable columns
 		static bool isColumnWidthSet = false;
 		if (!isColumnWidthSet) {
-			ImGui::SetColumnWidth(0, Settings::Instance().CalculateSize(colWidth));
+			ImGui::SetColumnWidth(0, Settings::Instance().CalculateSize(static_cast<float>(colWidth)));
 			isColumnWidthSet = true;
 		}
 
 		if (m_errorOccured)
-			ImGui::PushStyleColor(ImGuiCol_Text, ThemeContainer::Instance().GetTextEditorStyle(Settings::Instance().Theme)[(int)TextEditor::PaletteIndex::ErrorMessage]);
+			ImGui::PushStyleColor(ImGuiCol_Text, ThemeContainer::Instance().GetTextEditorStyle(Settings::Instance().Theme)[static_cast<int>(TextEditor::PaletteIndex::ErrorMessage)]);
 		ImGui::Text("Name:");
 		if (m_errorOccured)
 			ImGui::PopStyleColor();

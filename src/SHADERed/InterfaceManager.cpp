@@ -110,7 +110,7 @@ namespace ed {
 		Renderer.Render(true);
 
 		// window pipeline item
-		pipelineItems[previewTexture] = Renderer.GetPipelineItemByDebugID(0x00FFFFFF & getPixelID(previewTexture, mainPixelData, x, y, previewSize.x));
+		pipelineItems[previewTexture] = Renderer.GetPipelineItemByDebugID(static_cast<int>(0x00FFFFFF & getPixelID(previewTexture, mainPixelData, x, y, previewSize.x)));
 
 		// rt pipeline item
 		for (auto obj : objs) {
@@ -118,7 +118,7 @@ namespace ed {
 				GLuint tex = obj->Texture;
 				glm::ivec2 rtSize = Objects.GetRenderTextureSize(obj);
 
-				pipelineItems[tex] = Renderer.GetPipelineItemByDebugID(0x00FFFFFF & getPixelID(tex, mainPixelData, r.x * rtSize.x, r.y * rtSize.y, rtSize.x));
+				pipelineItems[tex] = Renderer.GetPipelineItemByDebugID(static_cast<int>(0x00FFFFFF & getPixelID(tex, mainPixelData, static_cast<int>(r.x) * rtSize.x, static_cast<int>(r.y) * rtSize.y, rtSize.x)));
 			}
 		}
 
@@ -333,7 +333,7 @@ namespace ed {
 				}
 			} else {
 				GLfloat bufData[3 * 18] = { 0.0f };
-				glGetBufferSubData(GL_ARRAY_BUFFER, pixel.VertexID * 18 * sizeof(float), pixel.VertexCount * 18 * sizeof(float), &bufData[0]);
+				glGetBufferSubData(GL_ARRAY_BUFFER, static_cast<GLintptr>(pixel.VertexID * 18 * sizeof(float)), pixel.VertexCount * 18 * sizeof(float), &bufData[0]);
 
 				copyFloatData(pixel.Vertex[0], &bufData[0]);
 				copyFloatData(pixel.Vertex[1], &bufData[18]);
@@ -399,7 +399,7 @@ namespace ed {
 			glBindBuffer(GL_ARRAY_BUFFER, vbo);
 			for (int i = 0; i < pixel.VertexCount; i++) {
 				GLfloat bufData[18] = { 0.0f };
-				glGetBufferSubData(GL_ARRAY_BUFFER, (pixel.VertexID + i) * vboStride * sizeof(float), vboStride * sizeof(float), &bufData[0]);
+				glGetBufferSubData(GL_ARRAY_BUFFER, static_cast<long>((pixel.VertexID + i) * vboStride * sizeof(float)), static_cast<long>(vboStride * sizeof(float)), &bufData[0]);
 
 				int bufIndex = 0;
 				for (int j = 0; j < inpLayoutSize; j++) {
@@ -463,7 +463,7 @@ namespace ed {
 					ret &= (plugin != nullptr && plugin->CustomLanguage_IsDebuggable(langID)) || plugin == nullptr;
 				}
 			} else if (i->Type == PipelineItem::ItemType::ComputePass) {
-				pipe::ComputePass* pass = (pipe::ComputePass*)i->Data;
+				auto* pass = static_cast<pipe::ComputePass*>(i->Data);
 				int langID = -1;
 
 				IPlugin1* plugin = ed::ShaderCompiler::GetPluginLanguageFromExtension(&langID, pass->Path, Plugins.Plugins());

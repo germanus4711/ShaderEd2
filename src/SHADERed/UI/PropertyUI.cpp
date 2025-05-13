@@ -17,7 +17,6 @@
 
 #define BUTTON_SPACE_LEFT Settings::Instance().CalculateSize(-40)
 #define REFRESH_BUTTON_SPACE_LEFT Settings::Instance().CalculateSize(-70)
-#define HARRAYSIZE(a) (sizeof(a) / sizeof(*a))
 
 namespace ed {
 	void PropertyUI::m_init()
@@ -518,11 +517,11 @@ namespace ed {
 
 					ImGui::PushItemWidth(-1);
 					int selectedTopology = 0;
-					for (selectedTopology = 0; selectedTopology < HARRAYSIZE(TOPOLOGY_ITEM_VALUES); selectedTopology++) {
+					for (selectedTopology = 0; selectedTopology < std::size(TOPOLOGY_ITEM_VALUES); selectedTopology++) {
 						if (TOPOLOGY_ITEM_VALUES[selectedTopology] == item->Topology)
 							break;
 					}
-					if (ImGui::Combo("##pui_geotopology", reinterpret_cast<int*>(&selectedTopology), TOPOLOGY_ITEM_NAMES, HARRAYSIZE(TOPOLOGY_ITEM_NAMES))) {
+					if (ImGui::Combo("##pui_geotopology", reinterpret_cast<int*>(&selectedTopology), TOPOLOGY_ITEM_NAMES, std::size(TOPOLOGY_ITEM_NAMES))) {
 						item->Topology = TOPOLOGY_ITEM_VALUES[selectedTopology];
 						m_data->Parser.ModifyProject();
 					}
@@ -1110,11 +1109,11 @@ namespace ed {
 
 					ImGui::PushItemWidth(-1);
 					int selectedTopology = 0;
-					for (selectedTopology = 0; selectedTopology < HARRAYSIZE(TOPOLOGY_ITEM_VALUES); selectedTopology++) {
+					for (selectedTopology = 0; selectedTopology < std::size(TOPOLOGY_ITEM_VALUES); selectedTopology++) {
 						if (TOPOLOGY_ITEM_VALUES[selectedTopology] == item->Topology)
 							break;
 					}
-					if (ImGui::Combo("##pui_geotopology", reinterpret_cast<int*>(&selectedTopology), TOPOLOGY_ITEM_NAMES, HARRAYSIZE(TOPOLOGY_ITEM_NAMES))) {
+					if (ImGui::Combo("##pui_geotopology", reinterpret_cast<int*>(&selectedTopology), TOPOLOGY_ITEM_NAMES, std::size(TOPOLOGY_ITEM_NAMES))) {
 						item->Topology = TOPOLOGY_ITEM_VALUES[selectedTopology];
 						m_data->Parser.ModifyProject();
 					}
@@ -1444,7 +1443,7 @@ namespace ed {
 				ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 				if (ImGui::BeginCombo("##pui_img_format_combo", gl::String::Format(m_currentImg3D->Format))) {
-					int len = (sizeof(FORMAT_NAMES) / sizeof(*FORMAT_NAMES));
+					int len = std::size(FORMAT_NAMES);
 					for (int i = 0; i < len; i++) {
 						if (ImGui::Selectable(FORMAT_NAMES[i], FORMAT_VALUES[i] == m_currentImg3D->Format)) {
 							m_currentImg3D->Format = FORMAT_VALUES[i];

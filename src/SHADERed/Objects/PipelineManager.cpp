@@ -31,19 +31,19 @@ namespace ed {
 	{
 		Logger::Get().Log("Clearing PipelineManager contents");
 
-		while (m_items.size() > 0)
+		while (!m_items.empty())
 			Remove(m_items[0]->Name);
 	}
 	bool PipelineManager::AddItem(const char* owner, const char* name, PipelineItem::ItemType type, void* data)
 	{
 		if (type == PipelineItem::ItemType::ShaderPass)
-			return AddShaderPass(name, (pipe::ShaderPass*)data);
+			return AddShaderPass(name, static_cast<pipe::ShaderPass*>(data));
 		else if (type == PipelineItem::ItemType::ComputePass)
-			return AddComputePass(name, (pipe::ComputePass*)data);
+			return AddComputePass(name, static_cast<pipe::ComputePass*>(data));
 		else if (type == PipelineItem::ItemType::AudioPass)
-			return AddAudioPass(name, (pipe::AudioPass*)data);
+			return AddAudioPass(name, static_cast<pipe::AudioPass*>(data));
 		else if (type == PipelineItem::ItemType::PluginItem) {
-			pipe::PluginItemData* pdata = (pipe::PluginItemData*)data; // TODO: memory leak here?
+			auto* pdata = static_cast<pipe::PluginItemData*>(data); // TODO: memory leak here?
 			return AddPluginItem(const_cast<char*>(owner), name, pdata->Type, pdata->PluginData, pdata->Owner);
 		}
 
@@ -78,7 +78,7 @@ namespace ed {
 
 				return true;
 			} else if (item->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* pass = (pipe::ShaderPass*)item->Data;
+				auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
 
 				for (auto& i : pass->Items)
 					if (strcmpcase(i->Name, name) == 0) {
@@ -115,19 +115,19 @@ namespace ed {
 				if (strcmp(item->Name, owner) != 0)
 					continue;
 
-				pipe::PluginItemData* pdata = new pipe::PluginItemData();
+				auto* pdata = new pipe::PluginItemData();
 				pdata->PluginData = data;
 				pdata->Owner = plugin;
 				strcpy(pdata->Type, type);
 
-				PipelineItem* pitem = new PipelineItem("\0", PipelineItem::ItemType::PluginItem, pdata);
+				auto* pitem = new PipelineItem("\0", PipelineItem::ItemType::PluginItem, pdata);
 				strcpy(pitem->Name, name);
 
 				if (item->Type == PipelineItem::ItemType::ShaderPass) {
-					pipe::ShaderPass* pass = (pipe::ShaderPass*)item->Data;
+					auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
 					pass->Items.push_back(pitem);
 				} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-					pipe::PluginItemData* plPass = (pipe::PluginItemData*)item->Data;
+					auto* plPass = static_cast<pipe::PluginItemData*>(item->Data);
 					plPass->Items.push_back(pitem);
 					plPass->Owner->PipelineItem_AddChild(owner, pitem->Name, plugin::PipelineItemType::PluginItem, data);
 				}
@@ -139,12 +139,12 @@ namespace ed {
 				return true;
 			}
 		} else {
-			pipe::PluginItemData* pdata = new pipe::PluginItemData();
+			auto* pdata = new pipe::PluginItemData();
 			pdata->PluginData = data;
 			pdata->Owner = plugin;
 			strcpy(pdata->Type, type);
 
-			PipelineItem* pitem = new PipelineItem("\0", PipelineItem::ItemType::PluginItem, pdata);
+			auto* pitem = new PipelineItem("\0", PipelineItem::ItemType::PluginItem, pdata);
 			m_items.push_back(pitem);
 			strcpy(pitem->Name, name);
 
@@ -218,20 +218,20 @@ namespace ed {
 		for (int i = 0; i < m_items.size(); i++) {
 			if (strcmp(m_items[i]->Name, name) == 0) {
 				if (m_items[i]->Type == PipelineItem::ItemType::ShaderPass) {
-					pipe::ShaderPass* data = (pipe::ShaderPass*)m_items[i]->Data;
+					auto* data = static_cast<pipe::ShaderPass*>(m_items[i]->Data);
 					glDeleteFramebuffers(1, &data->FBO);
 
 					// TODO: add this part to m_freeShaderPass method
 					for (auto& passItem : data->Items) {
 						if (passItem->Type == PipelineItem::ItemType::Geometry) {
-							pipe::GeometryItem* geo = (pipe::GeometryItem*)passItem->Data;
+							auto* geo = static_cast<pipe::GeometryItem*>(passItem->Data);
 							glDeleteVertexArrays(1, &geo->VAO);
 							glDeleteVertexArrays(1, &geo->VBO);
 						} else if (passItem->Type == PipelineItem::ItemType::PluginItem) {
-							pipe::PluginItemData* pdata = (pipe::PluginItemData*)passItem->Data;
+							auto* pdata = static_cast<pipe::PluginItemData*>(passItem->Data);
 							pdata->Owner->PipelineItem_Remove(passItem->Name, pdata->Type, pdata->PluginData);
 						} else if (passItem->Type == PipelineItem::ItemType::VertexBuffer) {
-							pipe::VertexBuffer* vb = (pipe::VertexBuffer*)passItem->Data;
+							auto* vb = static_cast<pipe::VertexBuffer*>(passItem->Data);
 							glDeleteVertexArrays(1, &vb->VAO);
 						} 
 
@@ -240,19 +240,19 @@ namespace ed {
 					}
 					data->Items.clear();
 				} else if (m_items[i]->Type == PipelineItem::ItemType::PluginItem) {
-					pipe::PluginItemData* pdata = (pipe::PluginItemData*)m_items[i]->Data;
+					auto* pdata = static_cast<pipe::PluginItemData*>(m_items[i]->Data);
 					pdata->Owner->PipelineItem_Remove(m_items[i]->Name, pdata->Type, pdata->PluginData);
 
 					for (auto& passItem : pdata->Items) {
 						if (passItem->Type == PipelineItem::ItemType::Geometry) {
-							pipe::GeometryItem* geo = (pipe::GeometryItem*)passItem->Data;
+							auto* geo = static_cast<pipe::GeometryItem*>(passItem->Data);
 							glDeleteVertexArrays(1, &geo->VAO);
 							glDeleteVertexArrays(1, &geo->VBO);
 						} else if (passItem->Type == PipelineItem::ItemType::PluginItem) {
-							pipe::PluginItemData* pldata = (pipe::PluginItemData*)passItem->Data;
+							auto* pldata = static_cast<pipe::PluginItemData*>(passItem->Data);
 							pdata->Owner->PipelineItem_Remove(passItem->Name, pldata->Type, pldata->PluginData);
 						} else if (passItem->Type == PipelineItem::ItemType::VertexBuffer) {
-							pipe::VertexBuffer* vb = (pipe::VertexBuffer*)passItem->Data;
+							auto* vb = static_cast<pipe::VertexBuffer*>(passItem->Data);
 							glDeleteVertexArrays(1, &vb->VAO);
 						} 
 
@@ -269,20 +269,20 @@ namespace ed {
 				break;
 			} else {
 				if (m_items[i]->Type == PipelineItem::ItemType::ShaderPass) {
-					pipe::ShaderPass* data = (pipe::ShaderPass*)m_items[i]->Data;
+					auto* data = static_cast<pipe::ShaderPass*>(m_items[i]->Data);
 					for (int j = 0; j < data->Items.size(); j++) {
 						if (strcmp(data->Items[j]->Name, name) == 0) {
 							ed::PipelineItem* child = data->Items[j];
 
 							if (child->Type == PipelineItem::ItemType::Geometry) {
-								pipe::GeometryItem* geo = (pipe::GeometryItem*)child->Data;
+								auto* geo = static_cast<pipe::GeometryItem*>(child->Data);
 								glDeleteVertexArrays(1, &geo->VAO);
 								glDeleteVertexArrays(1, &geo->VBO);
 							} else if (child->Type == PipelineItem::ItemType::PluginItem) {
-								pipe::PluginItemData* pdata = (pipe::PluginItemData*)child->Data;
+								auto* pdata = static_cast<pipe::PluginItemData*>(child->Data);
 								pdata->Owner->PipelineItem_Remove(child->Name, pdata->Type, pdata->PluginData);
 							} else if (child->Type == PipelineItem::ItemType::VertexBuffer) {
-								pipe::VertexBuffer* vb = (pipe::VertexBuffer*)child->Data;
+								auto* vb = static_cast<pipe::VertexBuffer*>(child->Data);
 								glDeleteVertexArrays(1, &vb->VAO);
 							} 
 
@@ -296,20 +296,20 @@ namespace ed {
 				}
 				// TODO: clean this up and free some space
 				else if (m_items[i]->Type == PipelineItem::ItemType::PluginItem) {
-					pipe::PluginItemData* data = (pipe::PluginItemData*)m_items[i]->Data;
+					auto* data = static_cast<pipe::PluginItemData*>(m_items[i]->Data);
 					for (int j = 0; j < data->Items.size(); j++) {
 						if (strcmp(data->Items[j]->Name, name) == 0) {
 							ed::PipelineItem* child = data->Items[j];
 
 							if (child->Type == PipelineItem::ItemType::Geometry) {
-								pipe::GeometryItem* geo = (pipe::GeometryItem*)child->Data;
+								auto* geo = static_cast<pipe::GeometryItem*>(child->Data);
 								glDeleteVertexArrays(1, &geo->VAO);
 								glDeleteVertexArrays(1, &geo->VBO);
 							} else if (child->Type == PipelineItem::ItemType::PluginItem) {
-								pipe::PluginItemData* pdata = (pipe::PluginItemData*)child->Data;
+								auto* pdata = static_cast<pipe::PluginItemData*>(child->Data);
 								pdata->Owner->PipelineItem_Remove(child->Name, pdata->Type, pdata->PluginData);
 							} else if (child->Type == PipelineItem::ItemType::VertexBuffer) {
-								pipe::VertexBuffer* vb = (pipe::VertexBuffer*)child->Data;
+								auto* vb = static_cast<pipe::VertexBuffer*>(child->Data);
 								glDeleteVertexArrays(1, &vb->VAO);
 							} 
 
@@ -328,19 +328,19 @@ namespace ed {
 	}
 	bool PipelineManager::Has(const char* name)
 	{
-		for (int i = 0; i < m_items.size(); i++) {
-			if (strcmpcase(m_items[i]->Name, name) == 0)
+		for (auto & m_item : m_items) {
+			if (strcmpcase(m_item->Name, name) == 0)
 				return true;
 			else {
-				if (m_items[i]->Type == PipelineItem::ItemType::ShaderPass) {
-					pipe::ShaderPass* data = (pipe::ShaderPass*)m_items[i]->Data;
-					for (int j = 0; j < data->Items.size(); j++)
-						if (strcmpcase(data->Items[j]->Name, name) == 0)
+				if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
+					auto* data = static_cast<pipe::ShaderPass*>(m_item->Data);
+					for (auto & Item : data->Items)
+						if (strcmpcase(Item->Name, name) == 0)
 							return true;
-				} else if (m_items[i]->Type == PipelineItem::ItemType::PluginItem) {
-					pipe::PluginItemData* data = (pipe::PluginItemData*)m_items[i]->Data;
-					for (int j = 0; j < data->Items.size(); j++)
-						if (strcmpcase(data->Items[j]->Name, name) == 0)
+				} else if (m_item->Type == PipelineItem::ItemType::PluginItem) {
+					auto* data = static_cast<pipe::PluginItemData*>(m_item->Data);
+					for (auto & Item : data->Items)
+						if (strcmpcase(Item->Name, name) == 0)
 							return true;
 				}
 			}
@@ -349,27 +349,27 @@ namespace ed {
 	}
 	char* PipelineManager::GetItemOwner(const char* name)
 	{
-		for (int i = 0; i < m_items.size(); i++) {
-			if (m_items[i]->Type == PipelineItem::ItemType::ShaderPass) {
-				pipe::ShaderPass* data = (pipe::ShaderPass*)m_items[i]->Data;
-				for (int j = 0; j < data->Items.size(); j++)
-					if (strcmp(data->Items[j]->Name, name) == 0)
-						return m_items[i]->Name;
+		for (auto & m_item : m_items) {
+			if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
+				auto data = static_cast<pipe::ShaderPass*>(m_item->Data);
+				for (auto & Item : data->Items)
+					if (strcmp(Item->Name, name) == 0)
+						return m_item->Name;
 			}
 		}
 		return nullptr;
 	}
 	PipelineItem* PipelineManager::Get(const char* name)
 	{
-		for (int i = 0; i < m_items.size(); i++) {
-			if (strcmp(m_items[i]->Name, name) == 0)
-				return m_items[i];
+		for (auto & m_item : m_items) {
+			if (strcmp(m_item->Name, name) == 0)
+				return m_item;
 			else {
-				if (m_items[i]->Type == PipelineItem::ItemType::ShaderPass) {
-					pipe::ShaderPass* data = (pipe::ShaderPass*)m_items[i]->Data;
-					for (int j = 0; j < data->Items.size(); j++)
-						if (strcmp(data->Items[j]->Name, name) == 0)
-							return data->Items[j];
+				if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
+					auto* data = static_cast<pipe::ShaderPass*>(m_item->Data);
+					for (auto & Item : data->Items)
+						if (strcmp(Item->Name, name) == 0)
+							return Item;
 				}
 			}
 		}
@@ -394,28 +394,28 @@ namespace ed {
 		//TODO: make it type-safe.
 		switch (type) {
 		case PipelineItem::ItemType::Geometry:
-			delete (pipe::GeometryItem*)data;
+			delete static_cast<pipe::GeometryItem*>(data);
 			break;
 		case PipelineItem::ItemType::ShaderPass:
-			delete (pipe::ShaderPass*)data;
+			delete static_cast<pipe::ShaderPass*>(data);
 			break;
 		case PipelineItem::ItemType::RenderState:
-			delete (pipe::RenderState*)data;
+			delete static_cast<pipe::RenderState*>(data);
 			break;
 		case PipelineItem::ItemType::Model:
-			delete (pipe::Model*)data;
+			delete static_cast<pipe::Model*>(data);
 			break;
 		case PipelineItem::ItemType::VertexBuffer:
-			delete (pipe::VertexBuffer*)data;
+			delete static_cast<pipe::VertexBuffer*>(data);
 			break;
 		case PipelineItem::ItemType::ComputePass:
-			delete (pipe::ComputePass*)data;
+			delete static_cast<pipe::ComputePass*>(data);
 			break;
 		case PipelineItem::ItemType::AudioPass:
-			delete (pipe::AudioPass*)data;
+			delete static_cast<pipe::AudioPass*>(data);
 			break;
 		case PipelineItem::ItemType::PluginItem:
-			delete (pipe::PluginItemData*)data;
+			delete static_cast<pipe::PluginItemData*>(data);
 			break;
 		case PipelineItem::ItemType::Count: break;
 		}

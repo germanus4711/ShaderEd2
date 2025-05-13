@@ -48,14 +48,14 @@ namespace ed {
 		// vbo
 		glGenBuffers(1, &vbo);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(GLfloat), data.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, static_cast<long>(data.size() * sizeof(GLfloat)), data.data(), GL_STATIC_DRAW);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 		// vao
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
 		glEnableVertexAttribArray(0);
 		glBindVertexArray(0);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -127,11 +127,11 @@ namespace ed {
 
 			int index = (x - fix) * 6;
 			// start (x,y,z)
-			gridData[index + 0] = x - 40;
+			gridData[index + 0] = static_cast<float>(x) - 40;
 			gridData[index + 1] = 0.0f;
 			gridData[index + 2] = -40.0f;
 			// end (x,y,z)
-			gridData[index + 3] = x - 40;
+			gridData[index + 3] = static_cast<float>(x) - 40;
 			gridData[index + 4] = 0.0f;
 			gridData[index + 5] = 40.0f;
 		}
@@ -146,11 +146,11 @@ namespace ed {
 			// start (x,y,z)
 			gridData[index + 0] = -40.0f;
 			gridData[index + 1] = 0.0f;
-			gridData[index + 2] = y - 40;
+			gridData[index + 2] = static_cast<float>(y) - 40;
 			// end (x,y,z)
 			gridData[index + 3] = 40.0f;
 			gridData[index + 4] = 0.0f;
-			gridData[index + 5] = y - 40;
+			gridData[index + 5] = static_cast<float>(y) - 40;
 		}
 		m_gridVAO = createLines(m_gridVBO, gridData);
 
@@ -196,37 +196,37 @@ namespace ed {
 		glDrawBuffers(1, fboBuffers);
 		glClearBufferfi(GL_DEPTH_STENCIL, 0, 1.0f, 0);
 		glClearBufferfv(GL_COLOR, 0, glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f)));
-		glViewport(0, 0, m_lastFBOWidth, m_lastFBOHeight);
+		glViewport(0, 0, static_cast<GLsizei>(m_lastFBOWidth), static_cast<GLsizei>(m_lastFBOHeight));
 
 		glUseProgram(m_simpleShader);
 
-		glm::mat4 matWorld = glm::mat4(1.0f);
+		auto matWorld = glm::mat4(1.0f);
 		glm::mat4 matVP = glm::perspective(glm::radians(45.0f), m_lastFBOWidth / m_lastFBOHeight, 0.1f, 1000.0f) * m_camera.GetMatrix();
 
-		glUniformMatrix4fv(m_uMatWorld, 1, GL_FALSE, glm::value_ptr(matWorld));
-		glUniformMatrix4fv(m_uMatVP, 1, GL_FALSE, glm::value_ptr(matVP));
+		glUniformMatrix4fv(static_cast<GLint>(m_uMatWorld), 1, GL_FALSE, glm::value_ptr(matWorld));
+		glUniformMatrix4fv(static_cast<GLint>(m_uMatVP), 1, GL_FALSE, glm::value_ptr(matVP));
 
 		glEnable(GL_BLEND);
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_MAX);
 
 		// draw lines
-		glUniform4fv(m_uColor, 1, glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 0.5f)));
+		glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 0.5f)));
 		glBindVertexArray(m_gridVAO);
 		glDrawArrays(GL_LINES, 0, 160 * 2);
 
 		// draw x
-		glUniform4fv(m_uColor, 1, glm::value_ptr(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+		glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
 		glBindVertexArray(m_xVAO);
 		glDrawArrays(GL_LINES, 0, 2);
 
 		// draw y
-		glUniform4fv(m_uColor, 1, glm::value_ptr(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+		glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
 		glBindVertexArray(m_yVAO);
 		glDrawArrays(GL_LINES, 0, 2);
 
 		// draw z
-		glUniform4fv(m_uColor, 1, glm::value_ptr(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)));
 		glBindVertexArray(m_zVAO);
 		glDrawArrays(GL_LINES, 0, 2);
 
@@ -237,7 +237,7 @@ namespace ed {
 		for (int i = 0; i < exprPositions.size(); i++) {
 			const glm::vec4& pos = exprPositions[i];
 
-			glUniform4fv(m_uColor, 1, glm::value_ptr(exprColors[i]));
+			glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(exprColors[i]));
 
 			if (pos.w == 0.0f) {
 				// vectors
@@ -250,26 +250,26 @@ namespace ed {
 					ypr = glm::inverse(glm::lookAt(glm::vec3(0, 0, 0), -glm::vec3(pos), glm::vec3(0, 1, 0)));
 
 				matWorld = ypr * glm::scale(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, glm::max<float>(0.0f, length - m_vectorPointSize)));
-				glUniformMatrix4fv(m_uMatWorld, 1, GL_FALSE, glm::value_ptr(matWorld));
+				glUniformMatrix4fv(static_cast<GLint>(m_uMatWorld), 1, GL_FALSE, glm::value_ptr(matWorld));
 				m_vectorHandle.Draw();
 
 				matWorld = ypr * glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, length - 1 - m_vectorPointSize));
-				glUniformMatrix4fv(m_uMatWorld, 1, GL_FALSE, glm::value_ptr(matWorld));
+				glUniformMatrix4fv(static_cast<GLint>(m_uMatWorld), 1, GL_FALSE, glm::value_ptr(matWorld));
 				m_vectorPoint.Draw();
 			} else {
 				// points
 				matWorld = glm::translate(glm::mat4(1), glm::vec3(pos)) * glm::scale(glm::mat4(1.0f), glm::vec3(0.075f));
-				glUniformMatrix4fv(m_uMatWorld, 1, GL_FALSE, glm::value_ptr(matWorld));
+				glUniformMatrix4fv(static_cast<GLint>(m_uMatWorld), 1, GL_FALSE, glm::value_ptr(matWorld));
 				glBindVertexArray(m_unitSphereVAO);
 				glDrawArrays(GL_TRIANGLES, 0, eng::GeometryFactory::VertexCount[ed::pipe::GeometryItem::GeometryType::Sphere]);
 			}
 		}
 
 		matWorld = glm::mat4(1.0f);
-		glUniformMatrix4fv(m_uMatWorld, 1, GL_FALSE, glm::value_ptr(matWorld));
+		glUniformMatrix4fv(static_cast<GLint>(m_uMatWorld), 1, GL_FALSE, glm::value_ptr(matWorld));
 
 		// draw unit sphere
-		glUniform4fv(m_uColor, 1, glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 0.25f)));
+		glUniform4fv(static_cast<GLint>(m_uColor), 1, glm::value_ptr(glm::vec4(1.0f, 1.0f, 1.0f, 0.25f)));
 		glBindVertexArray(m_unitSphereVAO);
 		glDrawArrays(GL_TRIANGLES, 0, eng::GeometryFactory::VertexCount[ed::pipe::GeometryItem::GeometryType::Sphere]);
 
@@ -286,7 +286,7 @@ namespace ed {
 	void DebugVectorWatchUI::OnEvent(const SDL_Event& e)
 	{
 		if (e.type == SDL_MOUSEBUTTONDOWN)
-			m_mouseContact = ImVec2(e.button.x, e.button.y);
+			m_mouseContact = ImVec2(static_cast<float>(e.button.x), static_cast<float>(e.button.y));
 	}
 	void DebugVectorWatchUI::Update(float delta)
 	{
@@ -303,9 +303,9 @@ namespace ed {
 
 		if (imgWidth != m_lastFBOWidth || imgHeight != m_lastFBOHeight) {
 			glBindTexture(GL_TEXTURE_2D, m_fboColor);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgWidth, imgHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, static_cast<GLint>(imgWidth), static_cast<GLint>(imgHeight), 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 			glBindTexture(GL_TEXTURE_2D, m_fboDepth);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, imgWidth, imgHeight, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, static_cast<GLint>(imgWidth), static_cast<GLint>(imgHeight), 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 			glBindTexture(GL_TEXTURE_2D, 0);
 
 			m_lastFBOWidth = imgWidth;
@@ -328,7 +328,7 @@ namespace ed {
 			for (size_t i = 0; i < exprs.size(); i++) {
 				ImGui::TableNextRow();
 
-				ImGui::PushID(i);
+				ImGui::PushID(static_cast<int>(i));
 
 				ImGui::TableSetColumnIndex(0);
 				ImGui::ColorEdit4("##vectorwatch_color", const_cast<float*>(glm::value_ptr(clrs[i])), ImGuiColorEditFlags_NoInputs);
@@ -362,14 +362,14 @@ namespace ed {
 
 		ImGui::PushItemWidth(-1);
 		if (ImGui::InputText("##vectorwatch_new_expr", m_newExpr, 512, ImGuiInputTextFlags_EnterReturnsTrue)) {
-			glm::vec4 watchColor = glm::vec4(1.0f);
+			auto watchColor = glm::vec4(1.0f);
 			unsigned char cr = 0, cg = 0, cb = 0;
 			do {
 				cr = rand() % 256;
 				cg = rand() % 256;
 				cb = rand() % 256;
 			} while (cr < 50 && cg < 50 && cb < 50);
-			watchColor = glm::vec4(cr / 255.0f, cg / 255.0f, cb / 255.0f, 1.0f);
+			watchColor = glm::vec4(static_cast<float>(cr) / 255.0f, static_cast<float>(cg) / 255.0f, static_cast<float>(cb) / 255.0f, 1.0f);
 
 			m_data->Debugger.AddVectorWatch(m_newExpr, watchColor);
 			m_data->Parser.ModifyProject();
@@ -393,15 +393,15 @@ namespace ed {
 				SDL_GetMouseState(&ptX, &ptY);
 
 				// get the delta from the last position
-				int dX = ptX - m_mouseContact.x;
-				int dY = ptY - m_mouseContact.y;
+				int dX = static_cast<int>(static_cast<float>(ptX) - m_mouseContact.x);
+				int dY = static_cast<int>(static_cast<float>(ptY) - m_mouseContact.y);
 
 				// save the last position
-				m_mouseContact = ImVec2(ptX, ptY);
+				m_mouseContact = ImVec2(static_cast<float>(ptX), static_cast<float>(ptY));
 
 				// rotate the camera according to the delta
-				m_camera.Yaw(dX);
-				m_camera.Pitch(dY);
+				m_camera.Yaw(static_cast<float>(dX));
+				m_camera.Pitch(static_cast<float>(dY));
 			}
 		}
 	}

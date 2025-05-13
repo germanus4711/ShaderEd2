@@ -26,7 +26,7 @@ namespace ed {
 		ret.name = var->Name;
 		ret.value = var->Value;
 		ret.type = var->Type;
-		ret.variablesReference = (var->Children.size() > 0) ? var->ID : 0;
+		ret.variablesReference = (!var->Children.empty()) ? var->ID : 0;
 		return ret;
 	}
 
@@ -184,7 +184,7 @@ namespace ed {
 			args.name = "Arguments";
 			args.presentationHint = "arguments";
 			args.variablesReference = DAP_ARGUMENTS_VAR_REF_ID;
-			if (m_stack.size() > 0) {
+			if (!m_stack.empty()) {
 				args.line = m_parser.Functions[m_stack[0].RealName].LineStart;
 				args.endLine = m_parser.Functions[m_stack[0].RealName].LineEnd;
 			}
@@ -194,7 +194,7 @@ namespace ed {
 			locals.name = "Locals";
 			locals.presentationHint = "locals";
 			locals.variablesReference = DAP_LOCALS_VAR_REF_ID;
-			if (m_stack.size() > 0) {
+			if (!m_stack.empty()) {
 				locals.line = m_parser.Functions[m_stack[0].RealName].LineStart;
 				locals.endLine = m_parser.Functions[m_stack[0].RealName].LineEnd;
 			}
@@ -254,7 +254,7 @@ namespace ed {
 					VariableValue* eval = m_processSPIRVResult("evaluate", m_debugger->GetVMImmediate(), type, res->members, res->member_count);
 					response.variablesReference = eval->ID;
 				}
-
+				// TODO check this vvv
 				return response;
 			});
 
@@ -318,9 +318,7 @@ namespace ed {
 		// https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Goto
 		// jump to a cursor line?
 		m_session->registerHandler([&](const dap::GotoRequest& req) {
-			bool hitBkpt = m_debugger->Jump(req.targetId);
-
-			if (hitBkpt)
+			if (m_debugger->Jump((int)req.targetId))
 				this->SendBreakpointEvent();
 			else
 				this->SendStepEvent();
@@ -346,7 +344,7 @@ namespace ed {
 			for (size_t i = 0; i < breakpoints.size(); i++) {
 				std::string condition = breakpoints[i].condition.value("");
 
-				m_debugger->AddBreakpoint(path, breakpoints[i].line, breakpoints[i].condition.has_value() && condition.size() > 0, condition, true);
+				m_debugger->AddBreakpoint(path, (int)breakpoints[i].line, breakpoints[i].condition.has_value() && !condition.empty(), condition, true);
 
 				res.breakpoints[i].verified = true;
 			}
@@ -374,7 +372,7 @@ namespace ed {
 		m_sessionEnded = false;
 		m_lastStep = false;
 
-		if (m_debugger->GetSPIRV().size() > 0)
+		if (!m_debugger->GetSPIRV().empty())
 			m_parser.Parse(m_debugger->GetSPIRV(), false);
 	}
 	void DebugAdapterProtocol::SendStepEvent()
@@ -434,7 +432,7 @@ namespace ed {
 			spvm_result_t func = vm->function_stack_info[i];
 			if (!(spvm_program_get_language(vm->owner) == SpvSourceLanguageHLSL && i == 0)) {
 				std::string fname(func->name);
-				if (fname.size() > 0 && fname[0] == '@') // clean up the @main(
+				if (!fname.empty() && fname[0] == '@') // clean up the @main(
 					fname = fname.substr(1);
 				size_t parenth = fname.find('(');
 				if (parenth != std::string::npos)
@@ -466,7 +464,8 @@ namespace ed {
 	}
 	DebugAdapterProtocol::VariableValue* DebugAdapterProtocol::m_addVariable(const std::string& name, const std::string& val, const std::string& type, std::vector<VariableValue*>& vals)
 	{
-		VariableValue* var = new VariableValue();
+		// TODO possible memory leak !
+		auto* var = new VariableValue();
 		var->ID = DAP_CUSTOM_VAR_REF_ID + vals.size();
 		var->Name = name;
 		var->Value = val;
@@ -490,16 +489,19 @@ namespace ed {
 		for (spvm_word i = 0; i < vm->owner->bound; i++) {
 			spvm_result_t slot = &vm->results[i];
 
-			if (((slot->type == spvm_result_type_variable && (slot->owner == nullptr || slot->owner == vm->current_function)) || (slot->type == spvm_result_type_function_parameter && slot->owner == vm->current_function)) && slot->name != nullptr) {
+			if (((slot->type == spvm_result_type_variable && (slot->owner == nullptr || slot->owner == vm->current_function))
+					|| (slot->type == spvm_result_type_function_parameter && slot->owner == vm->current_function))
+				&& slot->name != nullptr) {
+
 				spvm_result_t vtype = spvm_state_get_type_info(vm->results, &vm->results[slot->pointer]);
 				if (slot->name[0] == 0 && slot->owner == nullptr) {
 					// cache those global structures with "" name
-					for (spvm_word i = 0; i < vtype->member_count; i++) {
-						std::string memberName = "";
-						if (i < vtype->member_name_count)
-							memberName = vtype->member_name[i];
+					for (spvm_word word_index = 0; word_index < vtype->member_count; word_index++) {
+						std::string memberName;
+						if (word_index < vtype->member_name_count)
+							memberName = vtype->member_name[word_index];
 
-						m_globals.push_back(m_processSPIRVResult(memberName, vm, &vm->results[slot->members[i].type], slot->members[i].members, slot->members[i].member_count));
+						m_globals.push_back(m_processSPIRVResult(memberName, vm, &vm->results[slot->members[word_index].type], slot->members[word_index].members, slot->members[word_index].member_count));
 					}
 				} else {
 					// cache variable value
@@ -525,7 +527,7 @@ namespace ed {
 		std::string value = type;
 
 		// get the value only if needed
-		if (type.size() == 0) {
+		if (type.empty()) {
 			std::stringstream ss;
 			m_debugger->GetVariableValueAsString(ss, vm, vtype, mems, mem_count, "");
 			value = ss.str();
@@ -551,7 +553,7 @@ namespace ed {
 		// get object components
 		else if (vtype->value_type == spvm_value_type_struct) {
 			for (spvm_word i = 0; i < vtype->member_count; i++) {
-				std::string memberName = "";
+				std::string memberName;
 				if (i < vtype->member_name_count)
 					memberName = vtype->member_name[i];
 

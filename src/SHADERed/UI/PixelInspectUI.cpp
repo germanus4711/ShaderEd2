@@ -163,7 +163,7 @@ namespace ed {
 				PluginShaderEditor pluginEditor;
 				TextEditor* editor = nullptr;
 				bool requestCompile = false;
-				int initIndex = 0;
+				// int initIndex = 0;
 
 				bool vertexShaderEnabled = true, pixelShaderEnabled = true;
 				if (pixel.Pass->Type == PipelineItem::ItemType::PluginItem) {
@@ -179,7 +179,7 @@ namespace ed {
 				}
 				if (ImGui::Button(UI_ICON_PLAY "##debug_pixel", ImVec2(ICON_BUTTON_WIDTH, BUTTON_SIZE))
 					&& m_data->Messages.CanRenderPreview()) {
-					pipe::ShaderPass* pass = static_cast<pipe::ShaderPass*>(pixel.Pass->Data);
+					auto pass = static_cast<pipe::ShaderPass*>(pixel.Pass->Data);
 
 					CodeEditorUI* codeUI = (reinterpret_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code)));
 					codeUI->StopDebugging();
@@ -361,6 +361,7 @@ namespace ed {
 		// editor functions
 		if (editor) {
 			editor->OnDebuggerAction = [&](TextEditor* ed, const TextEditor::DebugAction act) {
+				// TODO check this vvv
 				auto codeEditor = (reinterpret_cast<CodeEditorUI*>(m_ui->Get(ViewID::Code)));
 
 				if (!m_data->Debugger.IsDebugging())
@@ -401,7 +402,7 @@ namespace ed {
 							PluginShaderEditor pluginEditor = codeEditor->GetPluginEditor(m_editorStack[i]);
 
 							if (pluginEditor.Plugin->GetVersion() >= 3)
-								static_cast<IPlugin3*>(pluginEditor.Plugin)->ShaderEditor_SetLineIndicator(pluginEditor.LanguageID, pluginEditor.ID, -1);
+								dynamic_cast<IPlugin3*>(pluginEditor.Plugin)->ShaderEditor_SetLineIndicator(pluginEditor.LanguageID, pluginEditor.ID, -1);
 						}
 					}
 
