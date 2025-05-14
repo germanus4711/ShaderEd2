@@ -97,15 +97,46 @@ namespace ed {
 
 		ed::Logger::Get().Log("Saved shortcut information");
 	}
+	// std::string KeyboardShortcuts::Exists(const std::string& name, int VK1, int VK2, bool alt, bool ctrl, bool shift)
+	// {
+	// 	for (auto& i : m_data)
+	// 		if (name != i.first
+	// 			&& i.second.Ctrl == ctrl
+	// 			&& i.second.Alt == alt
+	// 			&& i.second.Shift == shift && i.second.Key1 == VK1
+	// 			&& (VK2 == -1 || i.second.Key2 == VK2 || i.second.Key2 == -1)) {
+	// 			// autocomplete is a "special module" added to the text editor and not actually the text editor
+	// 			if (!(name == "CodeUI.Save" && i.first == "Project.Save")
+	// 				&& !(name == "Project.Save" && i.first == "CodeUI.Save")
+	// 				&& ((name.find("Editor") == std::string::npos && i.first.find("Editor") == std::string::npos)
+	// 					|| (name.find("Editor") != std::string::npos && i.first.find("Editor") != std::string::npos
+	// 					&& (name.find("Autocomplete") == std::string::npos && i.first.find("Autocomplete") == std::string::npos)))) {
+	// 				return i.first;
+	// 			}
+	// 		}
+	// 	return "";
+	// }
 	std::string KeyboardShortcuts::Exists(const std::string& name, int VK1, int VK2, bool alt, bool ctrl, bool shift)
 	{
-		for (auto& i : m_data)
-			if (name != i.first && i.second.Ctrl == ctrl && i.second.Alt == alt && i.second.Shift == shift && i.second.Key1 == VK1 && (VK2 == -1 || i.second.Key2 == VK2 || i.second.Key2 == -1)) {
-				if (!(name == "CodeUI.Save" && i.first == "Project.Save") && !(name == "Project.Save" && i.first == "CodeUI.Save") && ((name.find("Editor") == std::string::npos && i.first.find("Editor") == std::string::npos) || (name.find("Editor") != std::string::npos && i.first.find("Editor") != std::string::npos && // autocomplete is a "special module" added to the text editor and not actually the text editor
-																																		   (name.find("Autocomplete") == std::string::npos && i.first.find("Autocomplete") == std::string::npos)))) {
-					return i.first;
-				}
-			}
+		for (auto& shortcut : m_data) {
+			const auto& shortcutName = shortcut.first;
+			const auto& shortcutData = shortcut.second;
+
+			// Check if the shortcut matches but is not the one being checked
+			bool matchesInput = (name != shortcutName && shortcutData.Ctrl == ctrl && shortcutData.Alt == alt && shortcutData.Shift == shift && shortcutData.Key1 == VK1 && (VK2 == -1 || shortcutData.Key2 == VK2 || shortcutData.Key2 == -1));
+
+			if (!matchesInput)
+				continue;
+
+			// Skip specific conflicting shortcuts
+			bool isSpecialCase = (name == "CodeUI.Save" && shortcutName == "Project.Save") || (name == "Project.Save" && shortcutName == "CodeUI.Save") || ((name.find("Editor") != std::string::npos && shortcutName.find("Editor") != std::string::npos && name.find("Autocomplete") == std::string::npos && shortcutName.find("Autocomplete") == std::string::npos) || (name.find("Editor") == std::string::npos && shortcutName.find("Editor") == std::string::npos));
+
+			if (isSpecialCase)
+				continue;
+
+			return shortcutName;
+		}
+
 		return "";
 	}
 	bool KeyboardShortcuts::Set(const std::string& name, int VK1, int VK2, bool alt, bool ctrl, bool shift)
@@ -139,7 +170,7 @@ namespace ed {
 		if (m_data[name].Key1 == -1 || (m_data[name].Key1 == 0 && m_data[name].Key2 == 0))
 			return "NONE";
 
-		std::string ret = "";
+		std::string ret;
 
 		if (m_data[name].Ctrl)
 			ret += "CTRL+";
@@ -156,6 +187,7 @@ namespace ed {
 	std::vector<std::string> KeyboardShortcuts::GetNameList()
 	{
 		std::vector<std::string> ret;
+		ret.reserve(m_data.size());
 		for (const auto& i : m_data)
 			ret.push_back(i.first);
 		return ret;

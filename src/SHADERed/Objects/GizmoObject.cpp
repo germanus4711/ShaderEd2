@@ -103,12 +103,12 @@ namespace ed {
 			int j = i * 3 * 8;
 			GLfloat* ptrData = &circleData[j];
 
-			float xVal1 = sin(radStart + step * (float)i);
-			float yVal1 = cos(radStart + step * (float)i);
-			float xVal2 = sin(radStart + step * (float)(i + 1));
-			float yVal2 = cos(radStart + step * (float)(i + 1));
+			float xVal1 = sin(radStart + step * static_cast<float>(i));
+			float yVal1 = cos(radStart + step * static_cast<float>(i));
+			float xVal2 = sin(radStart + step * static_cast<float>(i + 1));
+			float yVal2 = cos(radStart + step * static_cast<float>(i + 1));
 
-			GLfloat point1[8] = { 0, 0, 0, 0, 0, 1, 0.5f, 0.5f };
+			const GLfloat point1[8] = { 0, 0, 0, 0, 0, 1, 0.5f, 0.5f };
 			GLfloat point2[8] = { xVal1 * radius, yVal1 * radius, 0, 0, 0, 1, xVal1 * 0.5f + 0.5f, yVal1 * 0.5f + 0.5f };
 			GLfloat point3[8] = { xVal2 * radius, yVal2 * radius, 0, 0, 0, 1, xVal2 * 0.5f + 0.5f, yVal2 * 0.5f + 0.5f };
 
@@ -366,8 +366,8 @@ namespace ed {
 		bool ret = true;
 
 		// handle scaling and translating
-		float mouseX = (float)x / (m_vw * 0.5f) - 1.0f;
-		float mouseY = (float)y / (m_vh * 0.5f) - 1.0f;
+		float mouseX = static_cast<float>(x) / (m_vw * 0.5f) - 1.0f;
+		float mouseY = static_cast<float>(y) / (m_vh * 0.5f) - 1.0f;
 
 		glm::mat4 proj = SystemVariableManager::Instance().GetProjectionMatrix();
 		glm::mat4 view = SystemVariableManager::Instance().GetCamera()->GetMatrix();

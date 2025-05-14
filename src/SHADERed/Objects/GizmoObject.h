@@ -51,7 +51,7 @@ namespace ed {
 		float m_lastDepth;
 
 		// 3d model info for gizmo handles
-		glm::vec3 m_colors[3];
+		glm::vec3 m_colors[3]{};
 		eng::Model m_model;
 
 		// ui info

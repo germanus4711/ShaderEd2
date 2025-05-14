@@ -74,7 +74,7 @@ namespace ed {
 	private:
 		bool m_canSolo(const std::string& name, int k);
 
-		int m_keys[2];
+		int m_keys[2]{};
 		std::map<std::string, Shortcut> m_data;
 	};
 }
