@@ -177,7 +177,7 @@ namespace ed {
 		// check if plugins listed in not loaded even exist
 		for (int i = 0; i < notLoaded.size(); i++) {
 			bool exists = false;
-			for (const auto & allName : allNames) {
+			for (const auto& allName : allNames) {
 				if (notLoaded[i] == allName) {
 					exists = true;
 					break;
@@ -229,18 +229,18 @@ namespace ed {
 	}
 	void PluginManager::Update(float delta)
 	{
-		for (auto & m_plugin : m_plugins)
+		for (auto& m_plugin : m_plugins)
 			m_plugin->Update(delta);
 	}
 
 	void PluginManager::BeginRender()
 	{
-		for (auto & m_plugin : m_plugins)
+		for (auto& m_plugin : m_plugins)
 			m_plugin->BeginRender();
 	}
 	void PluginManager::EndRender()
 	{
-		for (auto & m_plugin : m_plugins)
+		for (auto& m_plugin : m_plugins)
 			m_plugin->EndRender();
 	}
 
@@ -249,7 +249,7 @@ namespace ed {
 		int size = plugin->PipelineItem_GetInputLayoutSize(type, pldata);
 		std::vector<InputLayoutItem> inpLayout;
 		for (int j = 0; j < size; j++) {
-			plugin::InputLayoutItem inpOut{};
+			plugin::InputLayoutItem inpOut {};
 			plugin->PipelineItem_GetInputLayoutItem(type, pldata, j, inpOut);
 
 			InputLayoutItem inp;
@@ -847,8 +847,8 @@ namespace ed {
 
 			return nullptr;
 		};
-		plugin->SetPipelineItemPosition = [](void* item, float x, float y, float z) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->SetPipelineItemPosition = [](void* _item, float x, float y, float z) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -858,8 +858,8 @@ namespace ed {
 				item->Position = glm::vec3(x, y, z);
 			}
 		};
-		plugin->SetPipelineItemRotation = [](void* item, float x, float y, float z) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->SetPipelineItemRotation = [](void* _item, float x, float y, float z) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -869,8 +869,8 @@ namespace ed {
 				item->Rotation = glm::vec3(x, y, z);
 			}
 		};
-		plugin->SetPipelineItemScale = [](void* item, float x, float y, float z) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->SetPipelineItemScale = [](void* _item, float x, float y, float z) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -880,8 +880,8 @@ namespace ed {
 				item->Scale = glm::vec3(x, y, z);
 			}
 		};
-		plugin->GetPipelineItemPosition = [](void* item, float* data) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->GetPipelineItemPosition = [](void* _item, float* data) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -895,8 +895,8 @@ namespace ed {
 				data[2] = item->Position.z;
 			}
 		};
-		plugin->GetPipelineItemRotation = [](void* item, float* data) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->GetPipelineItemRotation = [](void* _item, float* data) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -910,8 +910,8 @@ namespace ed {
 				data[2] = item->Rotation.z;
 			}
 		};
-		plugin->GetPipelineItemScale = [](void* item, float* data) {
-			auto* pitem = static_cast<PipelineItem*>(item);
+		plugin->GetPipelineItemScale = [](void* _item, float* data) {
+			auto* pitem = static_cast<PipelineItem*>(_item);
 
 			if (pitem->Type == PipelineItem::ItemType::Geometry) {
 				auto* item = static_cast<pipe::GeometryItem*>(pitem->Data);
@@ -934,36 +934,36 @@ namespace ed {
 			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerContinue = [](void* Debugger, void* ed) {
-			((ed::DebugInformation*)Debugger)->Continue();
-			int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-			((TextEditor*)ed)->SetCurrentLineIndicator(curLine);
+			static_cast<ed::DebugInformation*>(Debugger)->Continue();
+			int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerStep = [](void* Debugger, void* ed) {
-			((ed::DebugInformation*)Debugger)->Step();
-			int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-			((TextEditor*)ed)->SetCurrentLineIndicator(curLine);
+			static_cast<ed::DebugInformation*>(Debugger)->Step();
+			int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerStepInto = [](void* Debugger, void* ed) {
-			((ed::DebugInformation*)Debugger)->StepInto();
-			int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-			((TextEditor*)ed)->SetCurrentLineIndicator(curLine);
+			static_cast<ed::DebugInformation*>(Debugger)->StepInto();
+			int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerStepOut = [](void* Debugger, void* ed) {
-			((ed::DebugInformation*)Debugger)->StepOut();
-			int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-			((TextEditor*)ed)->SetCurrentLineIndicator(curLine);
+			static_cast<ed::DebugInformation*>(Debugger)->StepOut();
+			int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+			static_cast<TextEditor*>(ed)->SetCurrentLineIndicator(curLine);
 		};
 		plugin->DebuggerCheckBreakpoint = [](void* Debugger, void* ed, int line) -> bool {
-			return ((ed::DebugInformation*)Debugger)->CheckBreakpoint(line);
+			return static_cast<ed::DebugInformation*>(Debugger)->CheckBreakpoint(line);
 		};
 		plugin->DebuggerIsDebugging = [](void* Debugger, void* ed) -> bool {
-			return ((ed::DebugInformation*)Debugger)->IsDebugging();
+			return static_cast<ed::DebugInformation*>(Debugger)->IsDebugging();
 		};
 		plugin->DebuggerGetCurrentLine = [](void* Debugger) -> int {
-			return ((ed::DebugInformation*)Debugger)->GetCurrentLine();
+			return static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
 		};
 		plugin->IsRenderTexture = [](void* objects, const char* name) -> bool {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			ObjectManagerItem* item = obj->Get(name);
 
 			if (item && item->RT != nullptr)
@@ -972,14 +972,14 @@ namespace ed {
 			return false;
 		};
 		plugin->GetRenderTextureSize = [](void* objects, const char* name, int& w, int& h) {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto obj = static_cast<ObjectManager*>(objects);
 			ObjectManagerItem* item = obj->Get(name);
 			glm::ivec2 tsize = obj->GetRenderTextureSize(item);
 			w = tsize.x;
 			h = tsize.y;
 		};
 		plugin->GetDepthTexture = [](void* objects, const char* name) -> unsigned int {
-			ObjectManager* obj = (ObjectManager*)objects;
+			auto* obj = static_cast<ObjectManager*>(objects);
 			return obj->Get(name)->RT->DepthStencilBuffer;
 		};
 		plugin->ScaleSize = [](float size) -> float {
@@ -987,7 +987,7 @@ namespace ed {
 		};
 
 		if (plugin->GetVersion() >= 2) {
-			ed::IPlugin2* plugin2 = (ed::IPlugin2*)plugin;
+			auto* plugin2 = dynamic_cast<ed::IPlugin2*>(plugin);
 			plugin2->GetHostIPluginMaxVersion = []() -> int {
 				return 2;
 			};
@@ -1013,11 +1013,11 @@ namespace ed {
 			plugin2->DebuggerImmediate = [](void* Debugger, const char* expr) -> const char* {
 				static std::string buffer;
 				spvm_result_t resType = nullptr;
-				spvm_result_t res = ((ed::DebugInformation*)Debugger)->Immediate(expr, resType);
+				spvm_result_t res = static_cast<ed::DebugInformation*>(Debugger)->Immediate(expr, resType);
 
 				if (res != nullptr) {
 					std::stringstream ss;
-					((ed::DebugInformation*)Debugger)->GetVariableValueAsString(ss, ((ed::DebugInformation*)Debugger)->GetVMImmediate(), resType, res->members, res->member_count, "");
+					static_cast<ed::DebugInformation*>(Debugger)->GetVariableValueAsString(ss, static_cast<ed::DebugInformation*>(Debugger)->GetVMImmediate(), resType, res->members, res->member_count, "");
 					buffer = ss.str();
 				} else
 					buffer = "ERROR";
@@ -1027,10 +1027,10 @@ namespace ed {
 		}
 
 		if (plugin->GetVersion() >= 3) {
-			ed::IPlugin3* plugin3 = (ed::IPlugin3*)plugin;
+			auto* plugin3 = dynamic_cast<ed::IPlugin3*>(plugin);
 			plugin3->RegisterPlugin = [](void* pluginManager, void* plugin, const char* pname, int apiVer, int pluginVer, void* procDLL) {
-				PluginManager* pm = (PluginManager*)pluginManager;
-				IPlugin1* p = (IPlugin1*)plugin;
+				auto* pm = static_cast<PluginManager*>(pluginManager);
+				auto* p = static_cast<IPlugin1*>(plugin);
 				pm->RegisterPlugin(p, pname, apiVer, pluginVer, procDLL);
 			};
 			plugin3->GetEditorPipelineItem = nullptr;
@@ -1038,16 +1038,16 @@ namespace ed {
 				SystemVariableManager::Instance().SetViewportSize(width, height);
 			};
 			plugin3->IsObjectBound = [](void* Objects, const char* name, void* pipelineItem) -> int {
-				ObjectManager* obj = (ObjectManager*)Objects;
+				auto* obj = static_cast<ObjectManager*>(Objects);
 				return obj->IsBound(obj->Get(name), (PipelineItem*)pipelineItem);
 			};
 			plugin3->DebuggerStepIntoPluginEditor = [](void* Debugger, void* UI, void* Plugin, int lang, int editorID) {
-				((ed::DebugInformation*)Debugger)->StepInto();
-				int curLine = ((ed::DebugInformation*)Debugger)->GetCurrentLine();
-				((IPlugin3*)Plugin)->ShaderEditor_SetLineIndicator(lang, editorID, curLine);
+				static_cast<ed::DebugInformation*>(Debugger)->StepInto();
+				int curLine = static_cast<ed::DebugInformation*>(Debugger)->GetCurrentLine();
+				static_cast<IPlugin3*>(Plugin)->ShaderEditor_SetLineIndicator(lang, editorID, curLine);
 			};
 			plugin3->DebuggerGetVariableValue = [](void* Debugger, const char* name, char* value, int valueLength) {
-				ed::DebugInformation* dbgr = ((ed::DebugInformation*)Debugger);
+				ed::DebugInformation* dbgr = static_cast<ed::DebugInformation*>(Debugger);
 
 				spvm_result_t memType;
 				size_t memCount = 0;
@@ -1063,11 +1063,11 @@ namespace ed {
 				strcpy(value, res.c_str());
 			};
 			plugin3->DebuggerStopPluginEditor = [](void* Debugger, void* UI, void* Plugin, int lang, int editorID) {
-				((ed::DebugInformation*)Debugger)->SetDebugging(false);
-				((IPlugin3*)Plugin)->ShaderEditor_SetLineIndicator(lang, editorID, -1);
+				static_cast<ed::DebugInformation*>(Debugger)->SetDebugging(false);
+				static_cast<IPlugin3*>(Plugin)->ShaderEditor_SetLineIndicator(lang, editorID, -1);
 			};
 			plugin3->DebuggerIsVMRunning = [](void* Debugger) -> bool {
-				return ((ed::DebugInformation*)Debugger)->IsVMRunning();
+				return static_cast<ed::DebugInformation*>(Debugger)->IsVMRunning();
 			};
 		}
 
@@ -1084,7 +1084,7 @@ namespace ed {
 			ed::Logger::Get().Log("Failed to initialize plugin \"" + pname + "\".");
 
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
-			DestroyPluginFn fnDestroyPlugin = (DestroyPluginFn)dlsym(procDLL, "DestroyPlugin");
+			auto fnDestroyPlugin = (DestroyPluginFn)dlsym(procDLL, "DestroyPlugin");
 			if (fnDestroyPlugin)
 				(*fnDestroyPlugin)(plugin);
 
@@ -1119,7 +1119,7 @@ namespace ed {
 
 			if (line.find("[" + pname + "]") == 0)
 				isIn = true;
-			else if (line.size() > 0 && line[0] == '[')
+			else if (!line.empty() && line[0] == '[')
 				isIn = false;
 		}
 
@@ -1151,12 +1151,12 @@ namespace ed {
 
 			if (!isUsedSomewhere) {
 				std::vector<std::string>& myExts = Settings::Instance().General.PluginShaderExtensions[plugin->CustomLanguage_GetName(i)];
-				if (myExts.size() == 0) myExts.push_back(langExt);
+				if (myExts.empty()) myExts.push_back(langExt);
 			}
 		}
 
 		if (plugin->GetVersion() >= 3) {
-			ed::IPlugin3* plugin3 = (ed::IPlugin3*)plugin;
+			auto* plugin3 = dynamic_cast<ed::IPlugin3*>(plugin);
 			plugin3->PluginManager_RegisterPlugins();
 		}
 	}
@@ -1204,31 +1204,27 @@ namespace ed {
 
 	bool PluginManager::IsLoaded(const std::string& plugin)
 	{
-		for (const auto& pl : m_names)
-			if (pl == plugin)
-				return true;
-
-		return false;
+		return std::find(m_names.begin(), m_names.end(), plugin) != m_names.end();
 	}
 
 	void PluginManager::HandleDropFile(const char* filename)
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			if (m_plugins[i]->HandleDropFile(filename))
+		for (auto& m_plugin : m_plugins)
+			if (m_plugin->HandleDropFile(filename))
 				break;
 	}
 	void PluginManager::HandleApplicationEvent(plugin::ApplicationEvent event, void* data1, void* data2)
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			m_plugins[i]->HandleApplicationEvent(event, data1, data2);
+		for (auto& m_plugin : m_plugins)
+			m_plugin->HandleApplicationEvent(event, data1, data2);
 	}
 
 	void PluginManager::ShowContextItems(const std::string& menu, void* owner, void* extraData)
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			if (m_plugins[i]->HasContextItems(menu.c_str())) {
+		for (auto& m_plugin : m_plugins)
+			if (m_plugin->HasContextItems(menu.c_str())) {
 				ImGui::Separator();
-				m_plugins[i]->ShowContextItems(menu.c_str(), owner, extraData);
+				m_plugin->ShowContextItems(menu.c_str(), owner, extraData);
 			}
 	}
 	void PluginManager::ShowContextItems(IPlugin1* plugin, const std::string& menu, void* owner)
@@ -1240,10 +1236,10 @@ namespace ed {
 	}
 	void PluginManager::ShowMenuItems(const std::string& menu)
 	{
-		for (int i = 0; i < m_plugins.size(); i++)
-			if (m_plugins[i]->HasMenuItems(menu.c_str())) {
+		for (auto& m_plugin : m_plugins)
+			if (m_plugin->HasMenuItems(menu.c_str())) {
 				ImGui::Separator();
-				m_plugins[i]->ShowMenuItems(menu.c_str());
+				m_plugin->ShowMenuItems(menu.c_str());
 			}
 	}
 	void PluginManager::ShowCustomMenu()
@@ -1274,12 +1270,12 @@ namespace ed {
 	bool PluginManager::ShowSystemVariables(PluginSystemVariableData* data, ShaderVariable::ValueType type)
 	{
 		bool ret = false;
-		for (int i = 0; i < m_plugins.size(); i++) {
-			int nameCount = m_plugins[i]->SystemVariables_GetNameCount((plugin::VariableType)type);
+		for (auto& m_plugin : m_plugins) {
+			int nameCount = m_plugin->SystemVariables_GetNameCount((plugin::VariableType)type);
 			for (int j = 0; j < nameCount; j++) {
-				const char* name = m_plugins[i]->SystemVariables_GetName((plugin::VariableType)type, j);
+				const char* name = m_plugin->SystemVariables_GetName((plugin::VariableType)type, j);
 				if (ImGui::Selectable(name)) {
-					data->Owner = m_plugins[i];
+					data->Owner = m_plugin;
 					strcpy(data->Name, name);
 					ret = true;
 				}
@@ -1291,13 +1287,13 @@ namespace ed {
 	bool PluginManager::ShowVariableFunctions(PluginFunctionData* data, ShaderVariable::ValueType type)
 	{
 		bool ret = false;
-		for (int i = 0; i < m_plugins.size(); i++) {
-			int nameCount = m_plugins[i]->VariableFunctions_GetNameCount((plugin::VariableType)type);
+		for (auto& m_plugin : m_plugins) {
+			int nameCount = m_plugin->VariableFunctions_GetNameCount((plugin::VariableType)type);
 
 			for (int j = 0; j < nameCount; j++) {
-				const char* name = m_plugins[i]->VariableFunctions_GetName((plugin::VariableType)type, j);
+				const char* name = m_plugin->VariableFunctions_GetName((plugin::VariableType)type, j);
 				if (ImGui::Selectable(name)) {
-					data->Owner = m_plugins[i];
+					data->Owner = m_plugin;
 					strcpy(data->Name, name);
 					ret = true;
 				}

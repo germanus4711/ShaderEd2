@@ -67,7 +67,7 @@ namespace ed {
 				continue;
 
 			if (item->Type == PipelineItem::ItemType::PluginItem) {
-				pipe::PluginItemData* pdata = (pipe::PluginItemData*)item->Data;
+				auto* pdata = static_cast<pipe::PluginItemData*>(item->Data);
 
 				pdata->Items.push_back(new PipelineItem("\0", type, data));
 				strcpy(pdata->Items.at(pdata->Items.size() - 1)->Name, name);
@@ -133,7 +133,7 @@ namespace ed {
 				}
 
 				Logger::Get().Log("Item " + std::string(name) + " added to the project");
-				
+
 				m_plugins->HandleApplicationEvent(plugin::ApplicationEvent::PipelineItemAdded, (void*)name, nullptr);
 
 				return true;
@@ -233,7 +233,7 @@ namespace ed {
 						} else if (passItem->Type == PipelineItem::ItemType::VertexBuffer) {
 							auto* vb = static_cast<pipe::VertexBuffer*>(passItem->Data);
 							glDeleteVertexArrays(1, &vb->VAO);
-						} 
+						}
 
 						FreeData(passItem->Data, passItem->Type);
 						delete passItem;
@@ -254,7 +254,7 @@ namespace ed {
 						} else if (passItem->Type == PipelineItem::ItemType::VertexBuffer) {
 							auto* vb = static_cast<pipe::VertexBuffer*>(passItem->Data);
 							glDeleteVertexArrays(1, &vb->VAO);
-						} 
+						}
 
 						FreeData(passItem->Data, passItem->Type);
 						delete passItem;
@@ -284,7 +284,7 @@ namespace ed {
 							} else if (child->Type == PipelineItem::ItemType::VertexBuffer) {
 								auto* vb = static_cast<pipe::VertexBuffer*>(child->Data);
 								glDeleteVertexArrays(1, &vb->VAO);
-							} 
+							}
 
 							FreeData(child->Data, child->Type);
 							child->Data = nullptr;
@@ -311,7 +311,7 @@ namespace ed {
 							} else if (child->Type == PipelineItem::ItemType::VertexBuffer) {
 								auto* vb = static_cast<pipe::VertexBuffer*>(child->Data);
 								glDeleteVertexArrays(1, &vb->VAO);
-							} 
+							}
 
 							FreeData(child->Data, child->Type);
 							child->Data = nullptr;
@@ -328,18 +328,18 @@ namespace ed {
 	}
 	bool PipelineManager::Has(const char* name)
 	{
-		for (auto & m_item : m_items) {
+		for (auto& m_item : m_items) {
 			if (strcmpcase(m_item->Name, name) == 0)
 				return true;
 			else {
 				if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
 					auto* data = static_cast<pipe::ShaderPass*>(m_item->Data);
-					for (auto & Item : data->Items)
+					for (auto& Item : data->Items)
 						if (strcmpcase(Item->Name, name) == 0)
 							return true;
 				} else if (m_item->Type == PipelineItem::ItemType::PluginItem) {
 					auto* data = static_cast<pipe::PluginItemData*>(m_item->Data);
-					for (auto & Item : data->Items)
+					for (auto& Item : data->Items)
 						if (strcmpcase(Item->Name, name) == 0)
 							return true;
 				}
@@ -349,10 +349,10 @@ namespace ed {
 	}
 	char* PipelineManager::GetItemOwner(const char* name)
 	{
-		for (auto & m_item : m_items) {
+		for (auto& m_item : m_items) {
 			if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
 				auto data = static_cast<pipe::ShaderPass*>(m_item->Data);
-				for (auto & Item : data->Items)
+				for (auto& Item : data->Items)
 					if (strcmp(Item->Name, name) == 0)
 						return m_item->Name;
 			}
@@ -361,13 +361,13 @@ namespace ed {
 	}
 	PipelineItem* PipelineManager::Get(const char* name)
 	{
-		for (auto & m_item : m_items) {
+		for (auto& m_item : m_items) {
 			if (strcmp(m_item->Name, name) == 0)
 				return m_item;
 			else {
 				if (m_item->Type == PipelineItem::ItemType::ShaderPass) {
 					auto* data = static_cast<pipe::ShaderPass*>(m_item->Data);
-					for (auto & Item : data->Items)
+					for (auto& Item : data->Items)
 						if (strcmp(Item->Name, name) == 0)
 							return Item;
 				}
@@ -391,7 +391,7 @@ namespace ed {
 	}
 	void PipelineManager::FreeData(void* data, PipelineItem::ItemType type)
 	{
-		//TODO: make it type-safe.
+		// TODO: make it type-safe.
 		switch (type) {
 		case PipelineItem::ItemType::Geometry:
 			delete static_cast<pipe::GeometryItem*>(data);
