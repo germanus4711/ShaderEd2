@@ -17,8 +17,8 @@ namespace ed {
 		void Create();
 		void Destroy();
 
-		inline InterfaceManager& Interface() { return m_interface; }
-		inline GUIManager& UI() { return m_ui; }
+		InterfaceManager& Interface() { return m_interface; }
+		GUIManager& UI() { return m_ui; }
 
 	private:
 		InterfaceManager m_interface;

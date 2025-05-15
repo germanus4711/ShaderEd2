@@ -46,10 +46,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_ASSBINEXPORTER_H_INC
 #define AI_ASSBINEXPORTER_H_INC
 
+#include "assimp/Exporter.hpp"
+#include "assimp/scene.h"
+
 #include <assimp/defs.h>
 
 // nothing really needed here - reserved for future use like properties
 namespace Assimp {
+class IOSystem;
 
 void ASSIMP_API ExportSceneAssbin(const char* pFile, IOSystem* pIOSystem, const aiScene* pScene, const ExportProperties* /*pProperties*/);
 

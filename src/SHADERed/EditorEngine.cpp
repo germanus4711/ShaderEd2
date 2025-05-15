@@ -32,8 +32,6 @@ namespace ed {
 	{
 		m_ui.Render();
 
-
-
 	}
 	void EditorEngine::Destroy()
 	{

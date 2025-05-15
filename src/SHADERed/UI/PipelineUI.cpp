@@ -38,7 +38,7 @@ namespace ed {
 
 		ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
 		for (int i = 0; i < items.size(); i++) {
-			m_renderItemUpDown(items[i]->Type == PipelineItem::ItemType::PluginItem ? (pipe::PluginItemData*)items[i]->Data : nullptr, items, i);
+			m_renderItemUpDown(items[i]->Type == PipelineItem::ItemType::PluginItem ? static_cast<pipe::PluginItemData*>(items[i]->Data) : nullptr, items, i);
 
 			if (items[i]->Type == PipelineItem::ItemType::ShaderPass) {
 
@@ -91,7 +91,6 @@ namespace ed {
 					i--;
 					continue;
 				}
-
 				auto* pdata = static_cast<pipe::PluginItemData*>(items[i]->Data);
 				for (int j = 0; j < pdata->Items.size(); j++) {
 					m_renderItemUpDown(pdata, pdata->Items, j);
@@ -221,43 +220,42 @@ namespace ed {
 		if (ImGui::BeginPopupModal("Input layout##pui_input_layout")) {
 			m_renderInputLayoutManagerUI();
 
-			if (ImGui::Button("Ok")) {
-				// recreate all VAOs
-				auto pass = static_cast<pipe::ShaderPass*>(m_modalItem->Data);
-				std::vector<PipelineItem*>& passItems = pass->Items;
+			if (!ImGui::Button("Ok")) return;
+			// recreate all VAOs
+			auto pass = static_cast<pipe::ShaderPass*>(m_modalItem->Data);
+			std::vector<PipelineItem*>& passItems = pass->Items;
 
-				for (auto& pitem : passItems) {
-					if (pitem->Type == PipelineItem::ItemType::Geometry) {
-						auto gitem = static_cast<pipe::GeometryItem*>(pitem->Data);
+			for (auto& pitem : passItems) {
+				if (pitem->Type == PipelineItem::ItemType::Geometry) {
+					auto gitem = static_cast<pipe::GeometryItem*>(pitem->Data);
 
-						if (gitem->Type == pipe::GeometryItem::GeometryType::ScreenQuadNDC)
-							continue;
+					if (gitem->Type == pipe::GeometryItem::GeometryType::ScreenQuadNDC)
+						continue;
 
-						auto bobj = static_cast<BufferObject*>(gitem->InstanceBuffer);
-						if (bobj == nullptr)
-							gl::CreateVAO(gitem->VAO, gitem->VBO, pass->InputLayout);
-						else
-							gl::CreateVAO(gitem->VAO, gitem->VBO, pass->InputLayout, 0, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
-					} else if (pitem->Type == PipelineItem::ItemType::Model) {
-						auto mitem = static_cast<pipe::Model*>(pitem->Data);
-						auto bobj = static_cast<BufferObject*>(mitem->InstanceBuffer);
-						if (bobj == nullptr) {
-							for (auto& mesh : mitem->Data->Meshes)
-								gl::CreateVAO(mesh.VAO, mesh.VBO, pass->InputLayout, mesh.EBO);
-						} else {
-							for (auto& mesh : mitem->Data->Meshes)
-								gl::CreateVAO(mesh.VAO, mesh.VBO, pass->InputLayout, mesh.EBO, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
-						}
-					} else if (pitem->Type == PipelineItem::ItemType::VertexBuffer) {
-						auto mitem = static_cast<pipe::VertexBuffer*>(pitem->Data);
-						auto* bobj = static_cast<BufferObject*>(mitem->Buffer);
-						if (bobj != nullptr)
-							gl::CreateBufferVAO(mitem->VAO, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
+					auto bobj = static_cast<BufferObject*>(gitem->InstanceBuffer);
+					if (bobj == nullptr)
+						gl::CreateVAO(gitem->VAO, gitem->VBO, pass->InputLayout);
+					else
+						gl::CreateVAO(gitem->VAO, gitem->VBO, pass->InputLayout, 0, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
+				} else if (pitem->Type == PipelineItem::ItemType::Model) {
+					auto mitem = static_cast<pipe::Model*>(pitem->Data);
+					auto bobj = static_cast<BufferObject*>(mitem->InstanceBuffer);
+					if (bobj == nullptr) {
+						for (auto& mesh : mitem->Data->Meshes)
+							gl::CreateVAO(mesh.VAO, mesh.VBO, pass->InputLayout, mesh.EBO);
+					} else {
+						for (auto& mesh : mitem->Data->Meshes)
+							gl::CreateVAO(mesh.VAO, mesh.VBO, pass->InputLayout, mesh.EBO, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
 					}
+				} else if (pitem->Type == PipelineItem::ItemType::VertexBuffer) {
+					auto mitem = static_cast<pipe::VertexBuffer*>(pitem->Data);
+					auto* bobj = static_cast<BufferObject*>(mitem->Buffer);
+					if (bobj != nullptr)
+						gl::CreateBufferVAO(mitem->VAO, bobj->ID, m_data->Objects.ParseBufferFormat(bobj->ViewFormat));
 				}
-
-				m_closePopup();
 			}
+
+			m_closePopup();
 			ImGui::EndPopup();
 		}
 

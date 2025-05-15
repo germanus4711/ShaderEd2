@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/libs/SpvGenTwo/lib/source/Instruction.cpp" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/libs/assimp/test/models-nonbsd/BLEND/bob.source.txt" charset="UTF-16" />
+    <file url="file://$PROJECT_DIR$/libs/assimp/test/models-nonbsd/MD5/bob.source.txt" charset="UTF-16" />
+    <file url="file://$PROJECT_DIR$/libs/misc/imgui_markdown.h" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/SHADERed/UI/UIHelper.cpp" charset="UTF-8" />
+  </component>
+</project>
