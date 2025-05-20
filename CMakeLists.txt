@@ -82,6 +82,7 @@ set(SOURCES
         src/SHADERed/UI/CodeEditorUISaving.cpp
         src/SHADERed/UI/CodeEditorSettings.cpp
         src/SHADERed/UI/CodeEditorPlugin.cpp
+        src/SHADERed/UI/CodeEditorWorker.cpp
 
         src/SHADERed/UI/CreateItemUI.cpp
         src/SHADERed/UI/MessageOutputUI.cpp
@@ -164,6 +165,8 @@ if (WIN32)
             src/SHADERed/UI/CodeEditorPlugin.h
             src/SHADERed/UI/CodeEditorSettings.cpp
             src/SHADERed/UI/CodeEditorSettings.h
+            src/SHADERed/UI/CodeEditorWorker.cpp
+            src/SHADERed/UI/CodeEditorWorker.h
     )
 endif ()
 

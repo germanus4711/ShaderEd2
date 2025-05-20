@@ -28,4 +28,21 @@ namespace ed {
 				return m_paths[i];
 		return "";
 	}
+	void CodeEditorUI::m_setupPlugin(ed::IPlugin1* plugin)
+	{
+		plugin->OnEditorContentChange = [](void* UI, void* plugin, int langID, int editorID) {
+			auto* gui = static_cast<GUIManager*>(UI);
+			auto* code = dynamic_cast<CodeEditorUI*>(gui->Get(ViewID::Code));
+			code->ChangePluginShaderEditor(static_cast<IPlugin1*>(plugin), langID, editorID);
+		};
+
+		if (plugin->GetVersion() >= 3) {
+			auto* plug3 = dynamic_cast<IPlugin3*>(plugin);
+			plug3->GetEditorPipelineItem = [](void* UI, void* plugin, int langID, int editorID) -> void* {
+				auto* gui = static_cast<GUIManager*>(UI);
+				const auto code = dynamic_cast<CodeEditorUI*>(gui->Get(ViewID::Code));
+				return code->GetPluginEditorPipelineItem(static_cast<IPlugin1*>(plugin), langID, editorID);
+			};
+		}
+	}
 }

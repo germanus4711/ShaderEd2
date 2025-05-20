@@ -63,6 +63,9 @@ namespace ed {
 		void StopDebugging() const;
 		void CloseAll(PipelineItem* item = nullptr);
 		void SaveAll();
+		void SaveSPVBinary();
+		void SaveGLSL();
+		void SaveHLSL();
 
 		void Open(PipelineItem* item, ed::ShaderStage stage);
 		void OpenFile(const std::string& path);
@@ -111,6 +114,7 @@ namespace ed {
 	private:
 		void m_setupShortcuts();
 		static void m_loadEditorShortcuts(TextEditor* editor);
+		void ConfigureTextEditor(TextEditor* editor, const std::string& path);
 		std::string m_findIncludedFile(const std::string& relativeTo, const std::string& path) const;
 
 		static TextEditor::LanguageDefinition m_buildLanguageDefinition(IPlugin1* plugin, int languageID);

@@ -189,9 +189,7 @@ namespace ed {
 						if (ImGui::BeginMenu("Code")) {
 							if (ImGui::MenuItem("Compile", KeyboardShortcuts::Instance().GetString("CodeUI.Compile").c_str(), false, m_items[i] != nullptr)) m_compile(i);
 
-							bool showStats = m_items[i] != nullptr && (m_pluginEditor[i].Plugin == nullptr || (m_pluginEditor[i].Plugin && m_pluginEditor[i].Plugin->ShaderEditor_HasStats(pluginLanguageID, pluginEditorID)));
-
-							if (showStats) {
+							if (m_items[i] != nullptr && (m_pluginEditor[i].Plugin == nullptr || (m_pluginEditor[i].Plugin && m_pluginEditor[i].Plugin->ShaderEditor_HasStats(pluginLanguageID, pluginEditorID)))) {
 								if (!m_stats[i].Visible && ImGui::MenuItem("Stats", KeyboardShortcuts::Instance().GetString("CodeUI.SwitchView").c_str())) {
 									m_stats[i].Visible = true;
 									m_stats[i].Refresh(m_items[i], m_shaderStage[i]);
@@ -239,19 +237,16 @@ namespace ed {
 							}
 						}
 					}
-
 					if (m_editor[i] && m_editor[i]->IsFocused())
 						m_selectedItem = i;
 				}
-
 				if (m_focusWindow) {
 					if (m_focusPath == m_paths[i]) {
 						ImGui::SetWindowFocus();
 						m_focusWindow = false;
 					}
 				}
-
-				wid[isPluginItem ? 4 : (int)m_shaderStage[i]]++;
+				wid[isPluginItem ? 4 : static_cast<int>(m_shaderStage[i])]++;
 				ImGui::End();
 			}
 		}
@@ -286,144 +281,24 @@ namespace ed {
 				m_savePopupOpen = -1;
 				ImGui::CloseCurrentPopup();
 			}
-
 			ImGui::EndPopup();
 		}
 
 		// save spir-v binary dialog
 		if (ifd::FileDialog::Instance().IsDone("SaveSPVBinaryDlg")) {
-			if (ifd::FileDialog::Instance().HasResult()) {
-				std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
-
-				std::vector<unsigned int> spv;
-
-				PipelineItem* item = m_items[m_editorSaveRequestID];
-				ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
-
-				if (item->Type == PipelineItem::ItemType::ShaderPass) {
-					auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->PSSPV;
-					else if (stage == ShaderStage::Vertex)
-						spv = pass->VSSPV;
-					else if (stage == ShaderStage::Geometry)
-						spv = pass->GSSPV;
-					else if (stage == ShaderStage::TessellationControl)
-						spv = pass->TCSSPV;
-					else if (stage == ShaderStage::TessellationEvaluation)
-						spv = pass->TESSPV;
-				} else if (item->Type == PipelineItem::ItemType::ComputePass) {
-					auto* pass = static_cast<pipe::ComputePass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->SPV;
-				} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-					auto* data = static_cast<pipe::PluginItemData*>(item->Data);
-					unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-					unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-
-					if (spvPtr != nullptr && spvSize != 0)
-						spv = std::vector(spvPtr, spvPtr + spvSize);
-				}
-
-				std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
-				spvOut.write(reinterpret_cast<char*>(spv.data()), static_cast<long>(sizeof(unsigned int)) * static_cast<std::streamsize>(spv.size()));
-				spvOut.close();
-			}
+			if (ifd::FileDialog::Instance().HasResult()) SaveSPVBinary();
 			ifd::FileDialog::Instance().Close();
 		}
 
 		// save glsl dialog
 		if (ifd::FileDialog::Instance().IsDone("SaveGLSLDlg")) {
-			if (ifd::FileDialog::Instance().HasResult()) {
-				std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
-
-				std::vector<unsigned int> spv;
-				bool gsUsed = false;
-				bool tsUsed = false;
-
-				PipelineItem* item = m_items[m_editorSaveRequestID];
-				ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
-
-				ShaderLanguage lang = ShaderCompiler::GetShaderLanguageFromExtension(m_paths[m_editorSaveRequestID]);
-
-				if (item->Type == PipelineItem::ItemType::ShaderPass) {
-					auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->PSSPV;
-					else if (stage == ShaderStage::Vertex)
-						spv = pass->VSSPV;
-					else if (stage == ShaderStage::Geometry)
-						spv = pass->GSSPV;
-					else if (stage == ShaderStage::TessellationControl)
-						spv = pass->TCSSPV;
-					else if (stage == ShaderStage::TessellationEvaluation)
-						spv = pass->TESSPV;
-
-					gsUsed = pass->GSUsed;
-					tsUsed = pass->TSUsed;
-				} else if (item->Type == PipelineItem::ItemType::ComputePass) {
-					auto* pass = static_cast<pipe::ComputePass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->SPV;
-				} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-					auto* data = static_cast<pipe::PluginItemData*>(item->Data);
-					unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-					unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-
-					if (spvPtr != nullptr && spvSize != 0)
-						spv = std::vector(spvPtr, spvPtr + spvSize);
-				}
-
-				std::string glslSource = ed::ShaderCompiler::ConvertToGLSL(spv, lang, stage, tsUsed, gsUsed, nullptr);
-
-				std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
-				spvOut.write(glslSource.c_str(), static_cast<long>(glslSource.size()));
-				spvOut.close();
-			}
+			if (ifd::FileDialog::Instance().HasResult()) SaveGLSL();
 			ifd::FileDialog::Instance().Close();
 		}
 
 		// save hlsl dialog
 		if (ifd::FileDialog::Instance().IsDone("SaveHLSLDlg")) {
-			if (ifd::FileDialog::Instance().HasResult()) {
-				std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
-
-				std::vector<unsigned int> spv;
-
-				PipelineItem* item = m_items[m_editorSaveRequestID];
-				ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
-
-				if (item->Type == PipelineItem::ItemType::ShaderPass) {
-					auto pass = static_cast<pipe::ShaderPass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->PSSPV;
-					else if (stage == ShaderStage::Vertex)
-						spv = pass->VSSPV;
-					else if (stage == ShaderStage::Geometry)
-						spv = pass->GSSPV;
-					else if (stage == ShaderStage::TessellationControl)
-						spv = pass->TCSSPV;
-					else if (stage == ShaderStage::TessellationEvaluation)
-						spv = pass->TESSPV;
-				} else if (item->Type == PipelineItem::ItemType::ComputePass) {
-					auto* pass = static_cast<pipe::ComputePass*>(item->Data);
-					if (stage == ShaderStage::Pixel)
-						spv = pass->SPV;
-				} else if (item->Type == PipelineItem::ItemType::PluginItem) {
-					auto* data = static_cast<pipe::PluginItemData*>(item->Data);
-					unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-					unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
-
-					if (spvPtr != nullptr && spvSize != 0)
-						spv = std::vector(spvPtr, spvPtr + spvSize);
-				}
-
-				std::string hlslSource = ed::ShaderCompiler::ConvertToHLSL(spv, stage);
-
-				std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
-				spvOut.write(hlslSource.c_str(), static_cast<long>(hlslSource.size()));
-				spvOut.close();
-			}
+			if (ifd::FileDialog::Instance().HasResult()) SaveHLSL();
 			ifd::FileDialog::Instance().Close();
 		}
 
@@ -604,13 +479,6 @@ namespace ed {
 		}
 	}
 
-	void CodeEditorUI::SetTheme(const TextEditor::Palette& colors) const
-	{
-		for (TextEditor* editor : m_editor)
-			if (editor)
-				editor->SetPalette(colors);
-	}
-
 	void CodeEditorUI::FillAutocomplete(TextEditor* tEdit, const SPIRVParser& spv, bool colorize)
 	{
 		bool changed = false;
@@ -649,7 +517,6 @@ namespace ed {
 						break;
 					}
 				}
-
 				if (!funcExists) changed = true;
 			}
 			// check if there are any user type changes
@@ -723,12 +590,6 @@ namespace ed {
 		// colorize if needed
 		if (changed)
 			tEdit->Colorize();
-	}
-	void CodeEditorUI::SetFont(const std::string& filename, int size)
-	{
-		m_fontNeedsUpdate = m_fontFilename != filename || m_fontSize != size;
-		m_fontFilename = filename;
-		m_fontSize = size;
 	}
 
 	void CodeEditorUI::Open(PipelineItem* item, ShaderStage stage)
@@ -813,28 +674,8 @@ namespace ed {
 				}
 			};
 
-			editor->SetPalette(ThemeContainer::Instance().GetTextEditorStyle(Settings::Instance().Theme));
-			editor->SetTabSize(Settings::Instance().Editor.TabSize);
-			editor->SetInsertSpaces(Settings::Instance().Editor.InsertSpaces);
-			editor->SetSmartIndent(Settings::Instance().Editor.SmartIndent);
-			editor->SetAutoIndentOnPaste(Settings::Instance().Editor.AutoIndentOnPaste);
-			editor->SetShowWhitespaces(Settings::Instance().Editor.ShowWhitespace);
-			editor->SetHighlightLine(Settings::Instance().Editor.HiglightCurrentLine);
-			editor->SetShowLineNumbers(Settings::Instance().Editor.LineNumbers);
-			editor->SetCompleteBraces(Settings::Instance().Editor.AutoBraceCompletion);
-			editor->SetHorizontalScroll(Settings::Instance().Editor.HorizontalScroll);
-			editor->SetSmartPredictions(Settings::Instance().Editor.SmartPredictions);
-			editor->SetFunctionTooltips(Settings::Instance().Editor.FunctionTooltips);
-			editor->SetFunctionDeclarationTooltip(Settings::Instance().Editor.FunctionDeclarationTooltips);
-			editor->SetPath(shaderPath);
-			editor->SetUIScale(Settings::Instance().DPIScale);
-			editor->SetUIFontSize(static_cast<float>(Settings::Instance().General.FontSize));
-			editor->SetEditorFontSize(static_cast<float>(Settings::Instance().Editor.FontSize));
-			editor->SetActiveAutocomplete(Settings::Instance().Editor.ActiveSmartPredictions);
-			editor->SetColorizerEnable(Settings::Instance().Editor.SyntaxHighlighting);
-			editor->SetScrollbarMarkers(Settings::Instance().Editor.ScrollbarMarkers);
-			editor->SetHiglightBrackets(Settings::Instance().Editor.HighlightBrackets);
-			editor->SetFoldEnabled(Settings::Instance().Editor.CodeFolding);
+			ConfigureTextEditor(editor, shaderPath);
+
 			editor->RequestOpen = [&](TextEditor* tEdit, const std::string& tEditPath, const std::string& path) {
 				OpenFile(m_findIncludedFile(tEditPath, path));
 			};
@@ -926,28 +767,8 @@ namespace ed {
 				}
 			};
 
-			editor->SetPalette(ThemeContainer::Instance().GetTextEditorStyle(Settings::Instance().Theme));
-			editor->SetTabSize(Settings::Instance().Editor.TabSize);
-			editor->SetInsertSpaces(Settings::Instance().Editor.InsertSpaces);
-			editor->SetSmartIndent(Settings::Instance().Editor.SmartIndent);
-			editor->SetAutoIndentOnPaste(Settings::Instance().Editor.AutoIndentOnPaste);
-			editor->SetShowWhitespaces(Settings::Instance().Editor.ShowWhitespace);
-			editor->SetHighlightLine(Settings::Instance().Editor.HiglightCurrentLine);
-			editor->SetShowLineNumbers(Settings::Instance().Editor.LineNumbers);
-			editor->SetCompleteBraces(Settings::Instance().Editor.AutoBraceCompletion);
-			editor->SetHorizontalScroll(Settings::Instance().Editor.HorizontalScroll);
-			editor->SetSmartPredictions(Settings::Instance().Editor.SmartPredictions);
-			editor->SetFunctionTooltips(Settings::Instance().Editor.FunctionTooltips);
-			editor->SetFunctionDeclarationTooltip(Settings::Instance().Editor.FunctionDeclarationTooltips);
-			editor->SetPath(path);
-			editor->SetUIScale(Settings::Instance().DPIScale);
-			editor->SetUIFontSize(static_cast<float>(Settings::Instance().General.FontSize));
-			editor->SetEditorFontSize(static_cast<float>(Settings::Instance().Editor.FontSize));
-			editor->SetActiveAutocomplete(Settings::Instance().Editor.ActiveSmartPredictions);
-			editor->SetColorizerEnable(Settings::Instance().Editor.SyntaxHighlighting);
-			editor->SetScrollbarMarkers(Settings::Instance().Editor.ScrollbarMarkers);
-			editor->SetHiglightBrackets(Settings::Instance().Editor.HighlightBrackets);
-			editor->SetFoldEnabled(Settings::Instance().Editor.CodeFolding);
+			ConfigureTextEditor(editor, path);
+
 			editor->RequestOpen = [&](TextEditor* tEdit, const std::string& tEditPath, const std::string& file_path) {
 				OpenFile(m_findIncludedFile(tEditPath, file_path));
 			};
@@ -1075,9 +896,9 @@ namespace ed {
 			};
 			m_loadEditorShortcuts(editor);
 
-			unsigned int spvSize = shader->Owner->PipelineItem_GetSPIRVSize(shader->Type, shader->PluginData, (plugin::ShaderStage)shaderStage);
+			unsigned int spvSize = shader->Owner->PipelineItem_GetSPIRVSize(shader->Type, shader->PluginData, static_cast<plugin::ShaderStage>(shaderStage));
 			if (spvSize > 0) {
-				unsigned int* spv = shader->Owner->PipelineItem_GetSPIRV(shader->Type, shader->PluginData, (plugin::ShaderStage)shaderStage);
+				unsigned int* spv = shader->Owner->PipelineItem_GetSPIRV(shader->Type, shader->PluginData, static_cast<plugin::ShaderStage>(shaderStage));
 				std::vector<unsigned int> spvVec(spv, spv + spvSize);
 
 				SPIRVParser spvData;
@@ -1165,29 +986,7 @@ namespace ed {
 		for (int i = 0; i < m_items.size() && i < data.size(); i++)
 			m_editor[i]->SetText(data[i]);
 	}
-	auto CodeEditorUI::m_loadEditorShortcuts(TextEditor* ed) -> void
-	{
-		const auto sMap = KeyboardShortcuts::Instance().GetMap();
 
-		for (auto& it : sMap) {
-			std::string id = it.first;
-
-			if (id.size() > 8 && id.substr(0, 6) == "Editor") {
-				std::string name = id.substr(7);
-
-				auto sID = TextEditor::ShortcutID::Count;
-				for (int i = 0; i < static_cast<int>(TextEditor::ShortcutID::Count); i++) {
-					if (EDITOR_SHORTCUT_NAMES[i] == name) {
-						sID = static_cast<TextEditor::ShortcutID>(i);
-						break;
-					}
-				}
-
-				if (sID != TextEditor::ShortcutID::Count)
-					ed->SetShortcut(sID, TextEditor::Shortcut(it.second.Key1, it.second.Key2, it.second.Alt, it.second.Ctrl, it.second.Shift));
-			}
-		}
-	}
 	std::string CodeEditorUI::m_findIncludedFile(const std::string& relativeTo, const std::string& path) const
 	{
 		for (const auto& p : Settings::Instance().Project.IncludePaths) {
@@ -1227,24 +1026,6 @@ namespace ed {
 		};
 	}
 
-	void CodeEditorUI::m_setupPlugin(ed::IPlugin1* plugin)
-	{
-		plugin->OnEditorContentChange = [](void* UI, void* plugin, int langID, int editorID) {
-			auto* gui = static_cast<GUIManager*>(UI);
-			auto* code = dynamic_cast<CodeEditorUI*>(gui->Get(ViewID::Code));
-			code->ChangePluginShaderEditor(static_cast<IPlugin1*>(plugin), langID, editorID);
-		};
-
-		if (plugin->GetVersion() >= 3) {
-			auto* plug3 = dynamic_cast<IPlugin3*>(plugin);
-			plug3->GetEditorPipelineItem = [](void* UI, void* plugin, int langID, int editorID) -> void* {
-				auto* gui = static_cast<GUIManager*>(UI);
-				const auto code = dynamic_cast<CodeEditorUI*>(gui->Get(ViewID::Code));
-				return code->GetPluginEditorPipelineItem(static_cast<IPlugin1*>(plugin), langID, editorID);
-			};
-		}
-	}
-
 	void CodeEditorUI::StopDebugging() const
 	{
 		for (int i = 0; i < m_editor.size(); i++) {
@@ -1256,496 +1037,6 @@ namespace ed {
 			}
 		}
 	}
-	void CodeEditorUI::StopThreads()
-	{
-		m_trackerRunning = false;
-		if (m_trackThread)
-			m_trackThread->detach();
-	}
-
-	void CodeEditorUI::CleanupTrackingThread()
-	{
-		if (m_trackThread != nullptr && m_trackThread->joinable())
-			m_trackThread->join();
-		delete m_trackThread;
-		m_trackThread = nullptr;
-	}
-
-	void CodeEditorUI::SetTrackFileChanges(bool track)
-	{
-		if (m_trackFileChanges == track)
-			return;
-
-		m_trackFileChanges = track;
-		m_trackerRunning = false;
-
-		if (track) {
-			Logger::Get().Log("Starting to track file changes...");
-
-			CleanupTrackingThread();
-
-			// start
-			m_trackerRunning = true;
-			m_trackThread = new std::thread(&CodeEditorUI::m_trackWorker, this);
-		} else {
-			Logger::Get().Log("Stopping file change tracking...");
-			CleanupTrackingThread();
-		}
-	}
-	void CodeEditorUI::m_trackWorker()
-	{
-		std::string curProject = m_data->Parser.GetOpenedFile();
-
-		std::vector<PipelineItem*> passes = m_data->Pipeline.GetList();
-		std::vector<bool> gsUsed(passes.size());
-		std::vector<bool> tsUsed(passes.size());
-
-		std::vector<std::string> allFiles;	// list of all files we care for
-		std::vector<std::string> allPasses; // list of shader pass names that correspond to the file name
-		std::vector<std::string> paths;		// list of all paths that we should have "notifications turned on"
-
-		m_trackUpdatesNeeded = 0;
-
-#if defined(__APPLE__)
-		// TODO: implementation for macos (cant test)
-#elif defined(__linux__) || defined(__unix__)
-
-		int bufLength, bufIndex = 0;
-		int notifyEngine = inotify_init1(IN_NONBLOCK);
-		char buffer[EVENT_BUF_LEN];
-
-		std::vector<int> notifyIDs;
-
-		if (notifyEngine < 0) {
-			// TODO: log!
-			return;
-		}
-
-		// make sure that read() doesn't block on exit
-		int flags = fcntl(notifyEngine, F_GETFL, 0);
-		flags = (flags | O_NONBLOCK);
-		fcntl(notifyEngine, F_SETFL, flags);
-
-#elif defined(_WIN32)
-		// variables for storing all the handles
-		std::vector<HANDLE> events(paths.size());
-		std::vector<HANDLE> hDirs(paths.size());
-		std::vector<OVERLAPPED> pOverlap(paths.size());
-
-		// buffer data
-		const int bufferLen = 2048;
-		char buffer[bufferLen];
-		DWORD bytesReturned;
-		char filename[SHADERED_MAX_PATH];
-#endif
-
-		// run this loop until we close the thread
-		while (m_trackerRunning) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(25));
-
-			for (auto&& j : m_trackedNeedsUpdate)
-				j = false;
-
-			// check if user added/changed shader paths
-			std::vector<PipelineItem*> nPasses = m_data->Pipeline.GetList();
-			bool needsUpdate = false;
-			for (auto& pass : nPasses) {
-				if (pass->Type == PipelineItem::ItemType::ShaderPass) {
-					auto* data = static_cast<pipe::ShaderPass*>(pass->Data);
-
-					bool foundVS = false, foundPS = false, foundGS = false, foundTCS = false, foundTES = false;
-
-					std::string vsPath(m_data->Parser.GetProjectPath(data->VSPath));
-					std::string psPath(m_data->Parser.GetProjectPath(data->PSPath));
-
-					for (auto& f : allFiles) {
-						if (f == vsPath) {
-							foundVS = true;
-							if (foundPS) break;
-						} else if (f == psPath) {
-							foundPS = true;
-							if (foundVS) break;
-						}
-					}
-
-					if (data->GSUsed) {
-						std::string gsPath(m_data->Parser.GetProjectPath(data->GSPath));
-						for (auto& f : allFiles)
-							if (f == gsPath) {
-								foundGS = true;
-								break;
-							}
-					} else
-						foundGS = true;
-
-					if (data->TSUsed) {
-						std::string tcsPath(m_data->Parser.GetProjectPath(data->TCSPath));
-						std::string tesPath(m_data->Parser.GetProjectPath(data->TESPath));
-						for (auto& f : allFiles) {
-							if (f == tesPath) {
-								foundTES = true;
-								break;
-							}
-							if (f == tcsPath) {
-								foundTCS = true;
-								break;
-							}
-						}
-					} else {
-						foundTES = true;
-						foundTCS = true;
-					}
-
-					if (!foundGS || !foundVS || !foundPS || !foundTES || !foundTCS) {
-						needsUpdate = true;
-						break;
-					}
-				} else if (pass->Type == PipelineItem::ItemType::ComputePass) {
-					auto* data = static_cast<pipe::ComputePass*>(pass->Data);
-
-					bool found = false;
-
-					std::string path(m_data->Parser.GetProjectPath(data->Path));
-
-					for (auto& f : allFiles)
-						if (f == path)
-							found = true;
-
-					if (!found) {
-						needsUpdate = true;
-						break;
-					}
-				} else if (pass->Type == PipelineItem::ItemType::AudioPass) {
-					auto* data = static_cast<pipe::AudioPass*>(pass->Data);
-
-					bool found = false;
-
-					std::string path(m_data->Parser.GetProjectPath(data->Path));
-
-					for (auto& f : allFiles)
-						if (f == path)
-							found = true;
-
-					if (!found) {
-						needsUpdate = true;
-						break;
-					}
-				} else if (pass->Type == PipelineItem::ItemType::PluginItem) {
-					auto* data = static_cast<pipe::PluginItemData*>(pass->Data);
-
-					if (data->Owner->ShaderFilePath_HasChanged()) {
-						needsUpdate = true;
-						data->Owner->ShaderFilePath_Update();
-					}
-				}
-			}
-
-			for (int i = 0; i < gsUsed.size() && i < nPasses.size() && i < tsUsed.size(); i++) {
-				if (nPasses[i]->Type == PipelineItem::ItemType::ShaderPass) {
-					bool newGSUsed = static_cast<pipe::ShaderPass*>(nPasses[i]->Data)->GSUsed;
-					bool newTSUsed = static_cast<pipe::ShaderPass*>(nPasses[i]->Data)->TSUsed;
-					if (gsUsed[i] != newGSUsed) {
-						gsUsed[i] = newGSUsed;
-						needsUpdate = true;
-					}
-					if (tsUsed[i] != newTSUsed) {
-						tsUsed[i] = newTSUsed;
-						needsUpdate = true;
-					}
-				}
-			}
-
-			// update our file collection if needed
-			if (needsUpdate || nPasses.size() != passes.size() || curProject != m_data->Parser.GetOpenedFile() || paths.empty()) {
-#if defined(__APPLE__)
-				// TODO: implementation for macos
-#elif defined(__linux__) || defined(__unix__)
-				for (int i = 0; i < notifyIDs.size(); i++)
-					inotify_rm_watch(notifyEngine, notifyIDs[i]);
-				notifyIDs.clear();
-#elif defined(_WIN32)
-				for (int i = 0; i < paths.size(); i++) {
-					CloseHandle(hDirs[i]);
-					CloseHandle(events[i]);
-				}
-				events.clear();
-				hDirs.clear();
-#endif
-
-				allFiles.clear();
-				allPasses.clear();
-				paths.clear();
-				curProject = m_data->Parser.GetOpenedFile();
-
-				// get all paths to all shaders
-				passes = nPasses;
-				gsUsed.resize(passes.size());
-				tsUsed.resize(passes.size());
-				m_trackedNeedsUpdate.resize(passes.size());
-				for (const auto& pass : passes) {
-					if (pass->Type == PipelineItem::ItemType::ShaderPass) {
-						auto* data = static_cast<pipe::ShaderPass*>(pass->Data);
-
-						std::string vsPath(m_data->Parser.GetProjectPath(data->VSPath));
-						std::string psPath(m_data->Parser.GetProjectPath(data->PSPath));
-
-						allFiles.push_back(vsPath);
-						paths.push_back(vsPath.substr(0, vsPath.find_last_of("/\\") + 1));
-						allPasses.emplace_back(pass->Name);
-
-						allFiles.push_back(psPath);
-						paths.push_back(psPath.substr(0, psPath.find_last_of("/\\") + 1));
-						allPasses.emplace_back(pass->Name);
-
-						// geometry shader
-						if (data->GSUsed) {
-							std::string gsPath(m_data->Parser.GetProjectPath(data->GSPath));
-
-							allFiles.push_back(gsPath);
-							paths.push_back(gsPath.substr(0, gsPath.find_last_of("/\\") + 1));
-							allPasses.emplace_back(pass->Name);
-						}
-
-						// tessellation shader
-						if (data->TSUsed) {
-							// tessellation control shader
-							std::string tcsPath(m_data->Parser.GetProjectPath(data->TCSPath));
-							allFiles.push_back(tcsPath);
-							paths.push_back(tcsPath.substr(0, tcsPath.find_last_of("/\\") + 1));
-							allPasses.emplace_back(pass->Name);
-
-							// tessellation evaluation shader
-							std::string tesPath(m_data->Parser.GetProjectPath(data->TESPath));
-							allFiles.push_back(tesPath);
-							paths.push_back(tesPath.substr(0, tesPath.find_last_of("/\\") + 1));
-							allPasses.emplace_back(pass->Name);
-						}
-					} else if (pass->Type == PipelineItem::ItemType::ComputePass) {
-						auto* data = static_cast<pipe::ComputePass*>(pass->Data);
-
-						std::string path(m_data->Parser.GetProjectPath(data->Path));
-
-						allFiles.push_back(path);
-						paths.push_back(path.substr(0, path.find_last_of("/\\") + 1));
-						allPasses.emplace_back(pass->Name);
-					} else if (pass->Type == PipelineItem::ItemType::AudioPass) {
-						auto data = static_cast<pipe::AudioPass*>(pass->Data);
-
-						std::string path(m_data->Parser.GetProjectPath(data->Path));
-
-						allFiles.push_back(path);
-						paths.push_back(path.substr(0, path.find_last_of("/\\") + 1));
-						allPasses.emplace_back(pass->Name);
-					} else if (pass->Type == PipelineItem::ItemType::PluginItem) {
-						auto* data = static_cast<pipe::PluginItemData*>(pass->Data);
-
-						int count = data->Owner->ShaderFilePath_GetCount();
-
-						for (int i = 0; i < count; i++) {
-							std::string path(m_data->Parser.GetProjectPath(data->Owner->ShaderFilePath_Get(i)));
-
-							allFiles.push_back(path);
-							paths.push_back(path.substr(0, path.find_last_of("/\\") + 1));
-							allPasses.emplace_back(pass->Name);
-						}
-					}
-				}
-
-				// delete directories that appear twice or that are subdirectories
-				{
-					std::vector<bool> toDelete(paths.size(), false);
-
-					for (int i = 0; i < paths.size(); i++) {
-						if (toDelete[i]) continue;
-
-						for (int j = 0; j < paths.size(); j++) {
-							if (j == i || toDelete[j]) continue;
-
-							if (paths[j].find(paths[i]) != std::string::npos)
-								toDelete[j] = true;
-						}
-					}
-
-					for (int i = 0; i < paths.size(); i++)
-						if (toDelete[i]) {
-							paths.erase(paths.begin() + i);
-							toDelete.erase(toDelete.begin() + i);
-							i--;
-						}
-				}
-
-#if defined(__APPLE__)
-				// TODO: implementation for macos
-#elif defined(__linux__) || defined(__unix__)
-				// create HANDLE to all tracked directories
-				notifyIDs.resize(paths.size());
-				for (int i = 0; i < paths.size(); i++)
-					notifyIDs[i] = inotify_add_watch(notifyEngine, paths[i].c_str(), IN_MODIFY);
-#elif defined(_WIN32)
-				events.resize(paths.size());
-				hDirs.resize(paths.size());
-				pOverlap.resize(paths.size());
-
-				// create HANDLE to all tracked directories
-				for (int i = 0; i < paths.size(); i++) {
-					hDirs[i] = CreateFileA(paths[i].c_str(), GENERIC_READ | FILE_LIST_DIRECTORY,
-						FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-						NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-						NULL);
-
-					if (hDirs[i] == INVALID_HANDLE_VALUE)
-						return;
-
-					pOverlap[i].OffsetHigh = 0;
-					pOverlap[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-
-					events[i] = pOverlap[i].hEvent;
-				}
-#endif
-			}
-
-			if (paths.empty()) {
-				std::this_thread::sleep_for(std::chrono::milliseconds(500));
-				continue;
-			}
-
-#if defined(__APPLE__)
-			// TODO: implementation for macos
-		}
-#elif defined(__linux__) || defined(__unix__)
-			fd_set rfds;
-			int eCount = select(notifyEngine + 1, &rfds, NULL, NULL, NULL);
-
-			if (eCount <= 0) continue;
-
-			// check for changes
-			bufLength = read(notifyEngine, buffer, EVENT_BUF_LEN);
-			if (bufLength < 0) { /* TODO: error! */
-			}
-
-			// read all events
-			while (bufIndex < bufLength) {
-				struct inotify_event* event = (struct inotify_event*)&buffer[bufIndex];
-				if (event->len) {
-					if (event->mask & IN_MODIFY) {
-						if (event->mask & IN_ISDIR) { /* it is a directory - do nothing */
-						} else {
-							// check if its our shader and push it on the update queue if it is
-							char filename[SHADERED_MAX_PATH];
-							strcpy(filename, event->name);
-
-							int pathIndex = 0;
-							for (int i = 0; i < notifyIDs.size(); i++) {
-								if (event->wd == notifyIDs[i]) {
-									pathIndex = i;
-									break;
-								}
-							}
-
-							std::lock_guard<std::mutex> lock(m_trackFilesMutex);
-							std::string updatedFile(paths[pathIndex] + filename);
-
-							for (int i = 0; i < allFiles.size(); i++)
-								if (allFiles[i] == updatedFile) {
-									// did we modify this file through "Compile" option?
-									bool shouldBeIgnored = false;
-									for (int j = 0; j < m_trackIgnore.size(); j++)
-										if (m_trackIgnore[j] == allPasses[i]) {
-											shouldBeIgnored = true;
-											m_trackIgnore.erase(m_trackIgnore.begin() + j);
-											break;
-										}
-
-									if (!shouldBeIgnored) {
-										m_trackUpdatesNeeded++;
-
-										for (int j = 0; j < passes.size(); j++)
-											if (allPasses[i] == passes[j]->Name)
-												m_trackedNeedsUpdate[j] = true;
-									}
-								}
-						}
-					}
-				}
-				bufIndex += EVENT_SIZE + event->len;
-			}
-			bufIndex = 0;
-		}
-
-		for (int i = 0; i < notifyIDs.size(); i++)
-			inotify_rm_watch(notifyEngine, notifyIDs[i]);
-		close(notifyEngine);
-#elif defined(_WIN32)
-			// notification data
-			FILE_NOTIFY_INFORMATION* notif;
-			int bufferOffset;
-
-			// check for changes
-			for (int i = 0; i < paths.size(); i++) {
-				ReadDirectoryChangesW(
-					hDirs[i],
-					&buffer,
-					bufferLen * sizeof(char),
-					TRUE,
-					FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
-					&bytesReturned,
-					&pOverlap[i],
-					NULL);
-			}
-
-			DWORD dwWaitStatus = WaitForMultipleObjects(paths.size(), events.data(), false, 1000);
-
-			// check if we got any info
-			if (dwWaitStatus != WAIT_TIMEOUT) {
-				bufferOffset = 0;
-				do {
-					// get notification data
-					notif = (FILE_NOTIFY_INFORMATION*)((char*)buffer + bufferOffset);
-					strcpy_s(filename, "");
-					int filenamelen = WideCharToMultiByte(CP_ACP, 0, notif->FileName, notif->FileNameLength / 2, filename, sizeof(filename), NULL, NULL);
-					if (filenamelen == 0)
-						continue;
-					filename[notif->FileNameLength / 2] = 0;
-
-					if (notif->Action == FILE_ACTION_MODIFIED) {
-						std::lock_guard<std::mutex> lock(m_trackFilesMutex);
-
-						std::string updatedFile(paths[dwWaitStatus - WAIT_OBJECT_0] + std::string(filename));
-
-						for (int i = 0; i < allFiles.size(); i++)
-							if (allFiles[i] == updatedFile) {
-								// did we modify this file through "Compile" option?
-								bool shouldBeIgnored = false;
-								for (int j = 0; j < m_trackIgnore.size(); j++)
-									if (m_trackIgnore[j] == allPasses[i]) {
-										shouldBeIgnored = true;
-										m_trackIgnore.erase(m_trackIgnore.begin() + j);
-										break;
-									}
-
-								if (!shouldBeIgnored) {
-									m_trackUpdatesNeeded++;
-
-									for (int j = 0; j < passes.size(); j++)
-										if (allPasses[i] == passes[j]->Name)
-											m_trackedNeedsUpdate[j] = true;
-								}
-							}
-					}
-
-					bufferOffset += notif->NextEntryOffset;
-				} while (notif->NextEntryOffset);
-			}
-		}
-		for (int i = 0; i < hDirs.size(); i++)
-			CloseHandle(hDirs[i]);
-		for (int i = 0; i < events.size(); i++)
-			CloseHandle(events[i]);
-		events.clear();
-		hDirs.clear();
-#endif
-	}
-
 	TextEditor::LanguageDefinition CodeEditorUI::m_buildLanguageDefinition(IPlugin1* plugin, int languageID)
 	{
 		TextEditor::LanguageDefinition langDef;

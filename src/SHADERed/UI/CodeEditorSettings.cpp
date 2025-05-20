@@ -5,6 +5,8 @@
 #include "CodeEditorSettings.h"
 
 #include "CodeEditorUI.h"
+#include "SHADERed/Objects/Names.h"
+#include "SHADERed/Objects/ThemeContainer.h"
 
 namespace ed {
 
@@ -57,5 +59,69 @@ namespace ed {
 
 		SetFont(Settings::Instance().Editor.FontPath, Settings::Instance().Editor.FontSize);
 		SetTrackFileChanges(Settings::Instance().General.RecompileOnFileChange);
+	}
+	void CodeEditorUI::SetTheme(const TextEditor::Palette& colors) const
+	{
+		for (TextEditor* editor : m_editor)
+			if (editor)
+				editor->SetPalette(colors);
+	}
+	void CodeEditorUI::SetFont(const std::string& filename, int size)
+	{
+		m_fontNeedsUpdate = m_fontFilename != filename || m_fontSize != size;
+		m_fontFilename = filename;
+		m_fontSize = size;
+	}
+	auto CodeEditorUI::m_loadEditorShortcuts(TextEditor* ed) -> void
+	{
+		const auto sMap = KeyboardShortcuts::Instance().GetMap();
+
+		for (auto& it : sMap) {
+			std::string id = it.first;
+
+			if (id.size() > 8 && id.substr(0, 6) == "Editor") {
+				std::string name = id.substr(7);
+
+				auto sID = TextEditor::ShortcutID::Count;
+				for (int i = 0; i < static_cast<int>(TextEditor::ShortcutID::Count); i++) {
+					if (EDITOR_SHORTCUT_NAMES[i] == name) {
+						sID = static_cast<TextEditor::ShortcutID>(i);
+						break;
+					}
+				}
+
+				if (sID != TextEditor::ShortcutID::Count)
+					ed->SetShortcut(sID, TextEditor::Shortcut(it.second.Key1, it.second.Key2, it.second.Alt, it.second.Ctrl, it.second.Shift));
+			}
+		}
+	}
+	void CodeEditorUI::ConfigureTextEditor(TextEditor* editor, const std::string& path)
+	{
+		if (!editor) return;
+
+		const auto& settings = Settings::Instance();
+
+		editor->SetPalette(ThemeContainer::Instance().GetTextEditorStyle(settings.Theme));
+		editor->SetTabSize(settings.Editor.TabSize);
+		editor->SetInsertSpaces(settings.Editor.InsertSpaces);
+		editor->SetSmartIndent(settings.Editor.SmartIndent);
+		editor->SetAutoIndentOnPaste(settings.Editor.AutoIndentOnPaste);
+		editor->SetShowWhitespaces(settings.Editor.ShowWhitespace);
+		editor->SetHighlightLine(settings.Editor.HiglightCurrentLine);
+		editor->SetShowLineNumbers(settings.Editor.LineNumbers);
+		editor->SetCompleteBraces(settings.Editor.AutoBraceCompletion);
+		editor->SetHorizontalScroll(settings.Editor.HorizontalScroll);
+		editor->SetSmartPredictions(settings.Editor.SmartPredictions);
+		editor->SetFunctionTooltips(settings.Editor.FunctionTooltips);
+		editor->SetFunctionDeclarationTooltip(settings.Editor.FunctionDeclarationTooltips);
+		editor->SetPath(path);
+		editor->SetUIScale(settings.DPIScale);
+		editor->SetUIFontSize(static_cast<float>(settings.General.FontSize));
+		editor->SetEditorFontSize(static_cast<float>(settings.Editor.FontSize));
+		editor->SetActiveAutocomplete(settings.Editor.ActiveSmartPredictions);
+		editor->SetColorizerEnable(settings.Editor.SyntaxHighlighting);
+		editor->SetScrollbarMarkers(settings.Editor.ScrollbarMarkers);
+		editor->SetHiglightBrackets(settings.Editor.HighlightBrackets);
+		editor->SetFoldEnabled(settings.Editor.CodeFolding);
 	}
 }

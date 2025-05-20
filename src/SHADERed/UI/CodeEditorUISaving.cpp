@@ -5,9 +5,12 @@
 #include "CodeEditorUISaving.h"
 
 #include "CodeEditorUI.h"
+#include "SHADERed/Objects/ShaderCompiler.h"
 #include "misc/ImFileDialog.h"
 
+#include <fstream>
 #include <iostream>
+
 namespace ed {
 	void CodeEditorUI::m_save(int editor_id)
 	{
@@ -167,5 +170,131 @@ namespace ed {
 	{
 		for (int i = 0; i < m_items.size(); i++)
 			m_save(i);
+	}
+
+	void CodeEditorUI::SaveSPVBinary()
+	{
+		std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
+
+		std::vector<unsigned int> spv;
+
+		PipelineItem* item = m_items[m_editorSaveRequestID];
+		ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
+
+		if (item->Type == PipelineItem::ItemType::ShaderPass) {
+			auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->PSSPV;
+			else if (stage == ShaderStage::Vertex)
+				spv = pass->VSSPV;
+			else if (stage == ShaderStage::Geometry)
+				spv = pass->GSSPV;
+			else if (stage == ShaderStage::TessellationControl)
+				spv = pass->TCSSPV;
+			else if (stage == ShaderStage::TessellationEvaluation)
+				spv = pass->TESSPV;
+		} else if (item->Type == PipelineItem::ItemType::ComputePass) {
+			auto* pass = static_cast<pipe::ComputePass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->SPV;
+		} else if (item->Type == PipelineItem::ItemType::PluginItem) {
+			auto* data = static_cast<pipe::PluginItemData*>(item->Data);
+			unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+			unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+
+			if (spvPtr != nullptr && spvSize != 0)
+				spv = std::vector(spvPtr, spvPtr + spvSize);
+		}
+
+		std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
+		spvOut.write(reinterpret_cast<char*>(spv.data()), static_cast<long>(sizeof(unsigned int)) * static_cast<std::streamsize>(spv.size()));
+		spvOut.close();
+	}
+	void CodeEditorUI::SaveGLSL()
+	{
+		std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
+
+		std::vector<unsigned int> spv;
+		bool gsUsed = false;
+		bool tsUsed = false;
+
+		PipelineItem* item = m_items[m_editorSaveRequestID];
+		ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
+
+		ShaderLanguage lang = ShaderCompiler::GetShaderLanguageFromExtension(m_paths[m_editorSaveRequestID]);
+
+		if (item->Type == PipelineItem::ItemType::ShaderPass) {
+			auto* pass = static_cast<pipe::ShaderPass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->PSSPV;
+			else if (stage == ShaderStage::Vertex)
+				spv = pass->VSSPV;
+			else if (stage == ShaderStage::Geometry)
+				spv = pass->GSSPV;
+			else if (stage == ShaderStage::TessellationControl)
+				spv = pass->TCSSPV;
+			else if (stage == ShaderStage::TessellationEvaluation)
+				spv = pass->TESSPV;
+
+			gsUsed = pass->GSUsed;
+			tsUsed = pass->TSUsed;
+		} else if (item->Type == PipelineItem::ItemType::ComputePass) {
+			auto* pass = static_cast<pipe::ComputePass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->SPV;
+		} else if (item->Type == PipelineItem::ItemType::PluginItem) {
+			auto* data = static_cast<pipe::PluginItemData*>(item->Data);
+			unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+			unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+
+			if (spvPtr != nullptr && spvSize != 0)
+				spv = std::vector(spvPtr, spvPtr + spvSize);
+		}
+
+		std::string glslSource = ed::ShaderCompiler::ConvertToGLSL(spv, lang, stage, tsUsed, gsUsed, nullptr);
+
+		std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
+		spvOut.write(glslSource.c_str(), static_cast<long>(glslSource.size()));
+		spvOut.close();
+	}
+	void CodeEditorUI::SaveHLSL()
+	{
+		std::string filePathName = ifd::FileDialog::Instance().GetResult().u8string();
+
+		std::vector<unsigned int> spv;
+
+		PipelineItem* item = m_items[m_editorSaveRequestID];
+		ShaderStage stage = m_shaderStage[m_editorSaveRequestID];
+
+		if (item->Type == PipelineItem::ItemType::ShaderPass) {
+			auto pass = static_cast<pipe::ShaderPass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->PSSPV;
+			else if (stage == ShaderStage::Vertex)
+				spv = pass->VSSPV;
+			else if (stage == ShaderStage::Geometry)
+				spv = pass->GSSPV;
+			else if (stage == ShaderStage::TessellationControl)
+				spv = pass->TCSSPV;
+			else if (stage == ShaderStage::TessellationEvaluation)
+				spv = pass->TESSPV;
+		} else if (item->Type == PipelineItem::ItemType::ComputePass) {
+			auto* pass = static_cast<pipe::ComputePass*>(item->Data);
+			if (stage == ShaderStage::Pixel)
+				spv = pass->SPV;
+		} else if (item->Type == PipelineItem::ItemType::PluginItem) {
+			auto* data = static_cast<pipe::PluginItemData*>(item->Data);
+			unsigned int spvSize = data->Owner->PipelineItem_GetSPIRVSize(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+			unsigned int* spvPtr = data->Owner->PipelineItem_GetSPIRV(data->Type, data->PluginData, static_cast<plugin::ShaderStage>(stage));
+
+			if (spvPtr != nullptr && spvSize != 0)
+				spv = std::vector(spvPtr, spvPtr + spvSize);
+		}
+
+		std::string hlslSource = ed::ShaderCompiler::ConvertToHLSL(spv, stage);
+
+		std::ofstream spvOut(filePathName, std::ios::out | std::ios::binary);
+		spvOut.write(hlslSource.c_str(), static_cast<long>(hlslSource.size()));
+		spvOut.close();
 	}
 }
