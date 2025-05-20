@@ -7,6 +7,7 @@ namespace ed {
 		BrowseOnlineUI(GUIManager* ui, ed::InterfaceManager* objects, const std::string& name = "", bool visible = true);
 
 		void OnEvent(const SDL_Event& e) override;
+		void LoadThumbnails();
 		void Update(float delta) override;
 
 		void Open();
