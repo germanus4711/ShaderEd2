@@ -862,28 +862,8 @@ namespace ed {
 
 			TextEditor::LanguageDefinition defPlugin = m_buildLanguageDefinition(shader->Owner, id);
 
-			editor->SetPalette(ThemeContainer::Instance().GetTextEditorStyle(Settings::Instance().Theme));
-			editor->SetTabSize(Settings::Instance().Editor.TabSize);
-			editor->SetInsertSpaces(Settings::Instance().Editor.InsertSpaces);
-			editor->SetSmartIndent(Settings::Instance().Editor.SmartIndent);
-			editor->SetAutoIndentOnPaste(Settings::Instance().Editor.AutoIndentOnPaste);
-			editor->SetShowWhitespaces(Settings::Instance().Editor.ShowWhitespace);
-			editor->SetHighlightLine(Settings::Instance().Editor.HiglightCurrentLine);
-			editor->SetShowLineNumbers(Settings::Instance().Editor.LineNumbers);
-			editor->SetCompleteBraces(Settings::Instance().Editor.AutoBraceCompletion);
-			editor->SetHorizontalScroll(Settings::Instance().Editor.HorizontalScroll);
-			editor->SetSmartPredictions(Settings::Instance().Editor.SmartPredictions);
-			editor->SetFunctionTooltips(Settings::Instance().Editor.FunctionTooltips);
-			editor->SetFunctionDeclarationTooltip(Settings::Instance().Editor.FunctionDeclarationTooltips);
-			editor->SetPath(filepath);
-			editor->SetUIScale(Settings::Instance().DPIScale);
-			editor->SetUIFontSize(static_cast<float>(Settings::Instance().General.FontSize));
-			editor->SetEditorFontSize(static_cast<float>(Settings::Instance().Editor.FontSize));
-			editor->SetActiveAutocomplete(Settings::Instance().Editor.ActiveSmartPredictions);
-			editor->SetColorizerEnable(Settings::Instance().Editor.SyntaxHighlighting);
-			editor->SetScrollbarMarkers(Settings::Instance().Editor.ScrollbarMarkers);
-			editor->SetHiglightBrackets(Settings::Instance().Editor.HighlightBrackets);
-			editor->SetFoldEnabled(Settings::Instance().Editor.CodeFolding);
+			ConfigureTextEditor(editor, filepath);
+
 			editor->RequestOpen = [&](TextEditor* tEdit, const std::string& tEditPath, const std::string& path) {
 				OpenFile(m_findIncludedFile(tEditPath, path));
 			};
