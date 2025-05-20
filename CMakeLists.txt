@@ -79,6 +79,10 @@ set(SOURCES
         # UI
         src/SHADERed/UI/BrowseOnlineUI.cpp
         src/SHADERed/UI/CodeEditorUI.cpp
+        src/SHADERed/UI/CodeEditorUISaving.cpp
+        src/SHADERed/UI/CodeEditorSettings.cpp
+        src/SHADERed/UI/CodeEditorPlugin.cpp
+
         src/SHADERed/UI/CreateItemUI.cpp
         src/SHADERed/UI/MessageOutputUI.cpp
         src/SHADERed/UI/ObjectListUI.cpp
@@ -154,6 +158,12 @@ if (WIN32)
             src/SHADERed/GUIManagerFIles.h
             src/SHADERed/GUIManagerSettings.cpp
             src/SHADERed/GUIManagerSettings.h
+            src/SHADERed/UI/CodeEditorUISaving.cpp
+            src/SHADERed/UI/CodeEditorUISaving.h
+            src/SHADERed/UI/CodeEditorPlugin.cpp
+            src/SHADERed/UI/CodeEditorPlugin.h
+            src/SHADERed/UI/CodeEditorSettings.cpp
+            src/SHADERed/UI/CodeEditorSettings.h
     )
 endif ()
 

@@ -59,6 +59,7 @@ namespace ed {
 		void UpdateAutoRecompileItems();
 
 		void StopThreads();
+		void CleanupTrackingThread();
 		void StopDebugging() const;
 		void CloseAll(PipelineItem* item = nullptr);
 		void SaveAll();
