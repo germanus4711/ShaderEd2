@@ -49,6 +49,8 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <misc/stb_image_write.h>
 
+#include <iostream>
+
 extern "C" {
 #include <misc/dds.h>
 }
@@ -276,6 +278,8 @@ namespace ed {
 				break;
 		}
 		infoReader.close();
+		std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
+		std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 	}
 	GUIManager::~GUIManager()
 	{

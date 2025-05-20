@@ -290,7 +290,11 @@ if (UNIX AND NOT APPLE)
 else ()
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/data DESTINATION "${RESOURCE_INST_DESTINATION}/data")
 endif()
+# Copy the resource files (recursively) into the build/bin/data directory
+file(COPY ${CMAKE_SOURCE_DIR}/bin/data DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 
+# Install resource files (for deployment/installation)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/data DESTINATION ${RESOURCE_INST_DESTINATION}/data)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/examples DESTINATION "${RESOURCE_INST_DESTINATION}/data/examples")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/templates DESTINATION "${RESOURCE_INST_DESTINATION}/data/templates")
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/themes DESTINATION "${RESOURCE_INST_DESTINATION}/data/themes")
