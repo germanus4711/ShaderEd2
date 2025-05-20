@@ -40,9 +40,13 @@ namespace ed {
 	{
 		const Settings& sets = Settings::Instance();
 
-		if (std::filesystem::exists(sets.Editor.FontPath))
+		if (std::filesystem::exists(sets.Editor.FontPath)) {
+			std::cout << "Loading code editor font: " << sets.Editor.FontPath << std::endl;
 			m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(sets.Editor.FontPath, static_cast<float>(sets.Editor.FontSize));
-		else {
+			if (m_font == nullptr) {
+				Logger::Get().Log("NPE: m_font", true);
+			}
+		} else {
 			m_font = ImGui::GetIO().Fonts->AddFontDefault();
 			Logger::Get().Log("Failed to load code editor font", true);
 		}
@@ -165,7 +169,7 @@ namespace ed {
 				else if (isSeparateFile)
 					stageAbbr = "FILE";
 
-				std::string shaderType = isPluginItem ? plData->Owner->LanguageDefinition_GetNameAbbreviation((int)m_shaderStage[i]) : stageAbbr;
+				std::string shaderType = isPluginItem ? plData->Owner->LanguageDefinition_GetNameAbbreviation(static_cast<int>(m_shaderStage[i])) : stageAbbr;
 				std::string windowName(std::string(isSeparateFile ? std::filesystem::path(m_paths[i]).filename().u8string() : m_items[i]->Name) + " (" + shaderType + ")");
 
 				int pluginLanguageID = m_pluginEditor[i].LanguageID;
@@ -177,7 +181,7 @@ namespace ed {
 
 				ImGui::SetNextWindowSizeConstraints(ImVec2(300, 300), ImVec2(10000, 10000));
 				ImGui::SetNextWindowSize(ImVec2(400, 300), ImGuiCond_FirstUseEver);
-				if (ImGui::Begin((std::string(windowName) + "###code_view" + shaderType + std::to_string(wid[isPluginItem ? 4 : (int)m_shaderStage[i]])).c_str(), &m_editorOpen[i], (ImGuiWindowFlags_UnsavedDocument * (isTextEditorChanged || isPluginEditorChanged)) | ImGuiWindowFlags_MenuBar)) {
+				if (ImGui::Begin((std::string(windowName) + "###code_view" + shaderType + std::to_string(wid[isPluginItem ? 4 : static_cast<int>(m_shaderStage[i])])).c_str(), &m_editorOpen[i], (ImGuiWindowFlags_UnsavedDocument * (isTextEditorChanged || isPluginEditorChanged)) | ImGuiWindowFlags_MenuBar)) {
 					if (ImGui::BeginMenuBar()) {
 						if (ImGui::BeginMenu("File")) {
 							if (ImGui::MenuItem("Save", KeyboardShortcuts::Instance().GetString("CodeUI.Save").c_str())) m_save(i);
@@ -392,7 +396,7 @@ namespace ed {
 	}
 	PipelineItem* CodeEditorUI::GetPluginEditorPipelineItem(const IPlugin1* plugin, const int langID, const int editorID) const
 	{
-		// PluginShaderEditor* plEditor = nullptr;
+		PluginShaderEditor* plEditor = nullptr;
 
 		for (int i = 0; i < m_pluginEditor.size(); i++) {
 			if (m_pluginEditor[i].LanguageID == langID && m_pluginEditor[i].ID == editorID && m_pluginEditor[i].Plugin == plugin)

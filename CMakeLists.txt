@@ -303,6 +303,14 @@ if (UNIX AND NOT APPLE)
 else ()
     install(DIRECTORY ${CMAKE_SOURCE_DIR}/bin/data DESTINATION "${RESOURCE_INST_DESTINATION}/data")
 endif()
+# Copy the required icon files to the runtime output directory
+file(COPY
+        ${CMAKE_SOURCE_DIR}/bin/icon_32x32.png
+        ${CMAKE_SOURCE_DIR}/bin/icon_64x64.png
+        ${CMAKE_SOURCE_DIR}/bin/icon_128x128.png
+        ${CMAKE_SOURCE_DIR}/bin/icon_256x256.png
+        DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
 # Copy the resource files (recursively) into the build/bin/data directory
 file(COPY ${CMAKE_SOURCE_DIR}/bin/data DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 

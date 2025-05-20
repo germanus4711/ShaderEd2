@@ -477,7 +477,7 @@ public:
 		mACEntries.push_back(std::make_pair(display, value));
 	}
 
-	static const std::vector<Shortcut> GetDefaultShortcuts();
+	static std::vector<Shortcut> GetDefaultShortcuts();
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
