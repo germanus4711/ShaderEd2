@@ -1616,7 +1616,7 @@ void TextEditor::RenderInternal(const char* aTitle)
 	mTextStart = (ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf, nullptr, nullptr).x + mLeftMargin) * mSidebar;
 
 	// render
-	GetPageSize();
+	auto page_size = GetPageSize();
 	if (!mLines.empty()) {
 		float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
 
