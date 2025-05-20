@@ -660,7 +660,7 @@ namespace ed {
 			if (lwr == "font") return seti.General.Font;
 
 			/* EDITOR */
-			if (lwr == "editorfont") return seti.Editor.Font;
+			if (lwr == "editorfont") return seti.Editor.FontPath;
 
 			return nullptr;
 		};

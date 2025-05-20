@@ -54,7 +54,7 @@ namespace ed {
 		void SaveSnippets() const;
 		void AddSnippet(const std::string& lang, const std::string& display, const std::string& search, const std::string& code);
 		void RemoveSnippet(const std::string& lang, const std::string& display);
-		inline const std::vector<CodeSnippet>& GetSnippets() { return m_snippets; }
+		const std::vector<CodeSnippet>& GetSnippets() { return m_snippets; }
 
 		void UpdateAutoRecompileItems();
 

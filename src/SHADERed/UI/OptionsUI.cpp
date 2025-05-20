@@ -636,12 +636,12 @@ namespace ed {
 		ImGui::SameLine();
 		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 		ImGui::PushItemWidth(REFRESH_BUTTON_SPACE);
-		ImGui::InputText("##opte_font", settings->Editor.Font, 256);
+		ImGui::InputText("##opte_font", settings->Editor.FontPath, 256);
 		ImGui::PopItemWidth();
 		ImGui::PopItemFlag();
 		ImGui::SameLine();
 		if (ImGui::Button("...", ImVec2(-1, 0))) {
-			m_dialogPath = settings->Editor.Font;
+			m_dialogPath = settings->Editor.FontPath;
 			ifd::FileDialog::Instance().Open("OptionsFontDlg", "Select a font", "Font (*.ttf;*.otf){.ttf,.otf},.*");
 		}
 

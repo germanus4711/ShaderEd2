@@ -40,14 +40,14 @@ namespace ed {
 	{
 		const Settings& sets = Settings::Instance();
 
-		if (std::filesystem::exists(sets.Editor.Font))
-			m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(sets.Editor.Font, static_cast<float>(sets.Editor.FontSize));
+		if (std::filesystem::exists(sets.Editor.FontPath))
+			m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(sets.Editor.FontPath, static_cast<float>(sets.Editor.FontSize));
 		else {
 			m_font = ImGui::GetIO().Fonts->AddFontDefault();
 			Logger::Get().Log("Failed to load code editor font", true);
 		}
 
-		m_fontFilename = sets.Editor.Font;
+		m_fontFilename = sets.Editor.FontPath;
 		m_fontSize = sets.Editor.FontSize;
 		m_fontNeedsUpdate = false;
 		m_savePopupOpen = -1;
@@ -578,7 +578,7 @@ namespace ed {
 			m_editor[i]->Render(windowName.c_str(), ImVec2(0, static_cast<float>(-statusbar) * STATUSBAR_HEIGHT));
 			if (ImGui::IsItemHovered() && ImGui::GetIO().KeyCtrl && ImGui::GetIO().MouseWheel != 0.0f) {
 				Settings::Instance().Editor.FontSize = static_cast<int>(ImGui::GetIO().MouseWheel) + Settings::Instance().Editor.FontSize;
-				this->SetFont(Settings::Instance().Editor.Font, Settings::Instance().Editor.FontSize);
+				this->SetFont(Settings::Instance().Editor.FontPath, Settings::Instance().Editor.FontSize);
 			}
 			ImGui::PopFont();
 
@@ -816,7 +816,7 @@ namespace ed {
 			m_loadEditorShortcuts(editor);
 		}
 
-		SetFont(Settings::Instance().Editor.Font, Settings::Instance().Editor.FontSize);
+		SetFont(Settings::Instance().Editor.FontPath, Settings::Instance().Editor.FontSize);
 		SetTrackFileChanges(Settings::Instance().General.RecompileOnFileChange);
 	}
 	void CodeEditorUI::FillAutocomplete(TextEditor* tEdit, const SPIRVParser& spv, bool colorize)

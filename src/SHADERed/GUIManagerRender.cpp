@@ -158,7 +158,7 @@ namespace ed {
 
 			std::cout << "Current working directory: "
 		  << std::filesystem::current_path() << std::endl;
-			std::cout << "Failed to load splash screen icon";
+			std::cout << "Failed to load splash screen icon 1";
 		} else {
 			glGenTextures(1, &m_splashScreenIcon);
 			glBindTexture(GL_TEXTURE_2D, m_splashScreenIcon);

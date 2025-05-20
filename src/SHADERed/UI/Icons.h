@@ -25,7 +25,7 @@
 #define UI_ICON_CHECK u8"\uf021"
 #define UI_ICON_WARNING u8"\uf026"
 #define UI_ICON_ARROW_DOWN u8"\ue313"
-#define UI_ICON_ARROW_UP u8"\ue316"
+#define UI_ICON_ARROW_UP u8"\ueaa1"
 #define UI_ICON_ADD u8"\uec3e"
 #define UI_ICON_REMOVE u8"\uec7e"
 #define UI_ICON_CLOSE u8"\uec4f"
