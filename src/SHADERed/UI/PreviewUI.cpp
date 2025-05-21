@@ -15,6 +15,7 @@
 
 #include <imgui/imgui_internal.h>
 #include <chrono>
+#include <numeric>
 #include <thread>
 
 #define STATUSBAR_HEIGHT Settings::Instance().CalculateSize(32) + ImGui::GetStyle().FramePadding.y
@@ -50,6 +51,10 @@ void main()
 )";
 
 namespace ed {
+	// Define a few variables for tracking
+	std::vector<float> fpsSamples;		// Container for FPS values
+	const int fpsSampleCount = 10 * 60; // Assuming 60 FPS (10 seconds of samples)
+
 	const char* getViewName(PreviewUI::PreviewView view)
 	{
 		switch (view) {
@@ -178,7 +183,7 @@ namespace ed {
 			// TODO ? vvv
 			float deltaTime = SystemVariableManager::Instance().GetTimeDelta();
 
-			SystemVariableManager::Instance().AdvanceTimer(0.1f);	// add one second to timer
+			SystemVariableManager::Instance().AdvanceTimer(0.1f);																																							  // add one second to timer
 			SystemVariableManager::Instance().SetFrameIndex(static_cast<int>(static_cast<float>(SystemVariableManager::Instance().GetFrameIndex()) + static_cast<float>(SystemVariableManager::Instance().GetFrameIndex()))); // add estimated number of frames
 
 			m_data->Renderer.Render(static_cast<int>(m_imgSize.x), static_cast<int>(m_imgSize.y));
@@ -1071,7 +1076,35 @@ namespace ed {
 		if (Settings::Instance().Preview.PropertyPick && !m_picks.empty())
 			dynamic_cast<PropertyUI*>(m_ui->Get(ViewID::Properties))->Open(m_picks[m_picks.size() - 1]);
 	}
+	void PreviewUI::UpdateAndDisplayFPS(float deltaTime)
+	{
+		// Calculate the current FPS
+		float FPS = 1.0f / deltaTime;
 
+		// Add the current FPS to the buffer
+		fpsSamples.push_back(FPS);
+
+		// Remove the oldest FPS value if we exceed the buffer size
+		if (fpsSamples.size() > fpsSampleCount) {
+			fpsSamples.erase(fpsSamples.begin());
+		}
+
+		// Calculate the mean FPS
+		float meanFPS = 0.0f;
+		if (!fpsSamples.empty()) {
+			meanFPS = std::accumulate(fpsSamples.begin(), fpsSamples.end(), 0.0f) / fpsSamples.size();
+		}
+
+		// Display the FPS and mean FPS in your GUI
+		ImGui::Separator();
+		// only show if mean is available instead of 'inf'
+		if (std::isfinite(meanFPS) && meanFPS >= 1.0f) {
+			ImGui::Text("FPS: %7.2f (FP10S: %7.0f)", FPS, meanFPS);
+		} else {
+			ImGui::Text("FPS: %7.2f", FPS);
+		}
+		// ImGui::Text("Mean FPS (10 sec): %.2f", meanFPS);
+	}
 	void PreviewUI::m_renderStatusbar(float width, float height)
 	{
 		bool isItemListVisible = width >= Settings::Instance().CalculateSize(675);
@@ -1081,9 +1114,8 @@ namespace ed {
 
 		int offset = (-100 * !isZoomVisible) + (-100 * !isTimeVisible);
 
-		float FPS = 1.0f / m_fpsDelta;
-		ImGui::Separator();
-		ImGui::Text("FPS: %.2f", FPS);
+		// Call the new UpdateAndDisplayFPS function with m_fpsDelta
+		UpdateAndDisplayFPS(m_fpsDelta);
 
 		if (isTimeVisible) {
 			ImGui::SameLine(Settings::Instance().CalculateSize(120));
@@ -1227,7 +1259,7 @@ namespace ed {
 				SystemVariableManager::Instance().AdvanceTimer(deltaTime);												// add one second to timer
 				SystemVariableManager::Instance().SetFrameIndex(SystemVariableManager::Instance().GetFrameIndex() + 1); // increase by 1 frame
 			} else {
-				SystemVariableManager::Instance().AdvanceTimer(0.1f);																					 // add one second to timer
+				SystemVariableManager::Instance().AdvanceTimer(0.1f);																										 // add one second to timer
 				SystemVariableManager::Instance().SetFrameIndex(static_cast<int>(static_cast<float>(SystemVariableManager::Instance().GetFrameIndex()) + 0.1f / deltaTime)); // add estimated number of frames
 			}
 
@@ -1592,7 +1624,7 @@ namespace ed {
 
 		// Analyze | Close buttons
 		ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 260);
-		bool canContinue = isFullFrame|| ((std::abs(m_regionEnd.x - m_regionStart.x) * std::abs(m_regionEnd.y - m_regionStart.y) * m_imgSize.x * m_imgSize.y) > 100); // don't allow small regions
+		bool canContinue = isFullFrame || ((std::abs(m_regionEnd.x - m_regionStart.x) * std::abs(m_regionEnd.y - m_regionStart.y) * m_imgSize.x * m_imgSize.y) > 100); // don't allow small regions
 		if (!canContinue) {
 			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
 			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
