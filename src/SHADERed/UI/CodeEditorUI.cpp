@@ -41,7 +41,7 @@ namespace ed {
 		const Settings& sets = Settings::Instance();
 
 		if (std::filesystem::exists(sets.Editor.FontPath)) {
-			std::cout << "Loading code editor font: " << sets.Editor.FontPath << std::endl;
+			Logger::Get().Log("Loading code editor font: ", sets.Editor.FontPath);
 			m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF(sets.Editor.FontPath, static_cast<float>(sets.Editor.FontSize));
 			if (m_font == nullptr) {
 				Logger::Get().Log("NPE: m_font", true);

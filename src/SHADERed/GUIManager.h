@@ -68,10 +68,10 @@ namespace ed {
 		void LoadSettings();
 
 		void CreateNewShaderPass();
-		void CreateNewTexture();
-		void CreateNewTexture3D();
+		static void CreateNewTexture();
+		static void CreateNewTexture3D();
 		void CreateNewCubemap() { m_isCreateCubemapOpened = true; }
-		void CreateNewAudio();
+		static void CreateNewAudio();
 		void CreateNewRenderTexture() { m_isCreateRTOpened = true; }
 		void CreateNewBuffer() { m_isCreateBufferOpened = true; }
 		void CreateNewImage() { m_isCreateImgOpened = true; }

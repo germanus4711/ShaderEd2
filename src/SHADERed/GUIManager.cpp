@@ -67,6 +67,7 @@ extern "C" {
 #include <windows.h>
 #endif
 #include <queue>
+#include <utility>
 
 namespace ed {
 	GUIManager::GUIManager(ed::InterfaceManager* objs, SDL_Window* wnd, SDL_GLContext* gl)
@@ -278,8 +279,8 @@ namespace ed {
 				break;
 		}
 		infoReader.close();
-		std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
-		std::cout << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+		Logger::Get().Log("OpenGL Version: ", glGetString(GL_VERSION));
+		Logger::Get().Log("GLSL Version: ", glGetString(GL_SHADING_LANGUAGE_VERSION));
 	}
 	GUIManager::~GUIManager()
 	{
@@ -327,13 +328,10 @@ namespace ed {
 
 		// check for shortcut presses
 		if (e.type == SDL_KEYDOWN) {
-			if (!(m_optionsOpened && dynamic_cast<OptionsUI*>(m_options)->IsListening())) {
-				const bool codeHasFocus = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code))->HasFocus();
-
-				if (!(ImGui::GetIO().WantTextInput && !codeHasFocus)) {
-					KeyboardShortcuts::Instance().Check(e, codeHasFocus);
-					dynamic_cast<CodeEditorUI*>(Get(ViewID::Code))->RequestedProjectSave = false;
-				}
+			if (auto* codeEditor = dynamic_cast<CodeEditorUI*>(Get(ViewID::Code)); (!m_optionsOpened || !dynamic_cast<OptionsUI*>(m_options)->IsListening())
+				&& (!ImGui::GetIO().WantTextInput || codeEditor->HasFocus())) {
+				KeyboardShortcuts::Instance().Check(e, codeEditor->HasFocus());
+				codeEditor->RequestedProjectSave = false;
 			}
 		} else if (e.type == SDL_MOUSEMOTION)
 			m_perfModeClock.Restart();
@@ -414,7 +412,7 @@ namespace ed {
 
 	void GUIManager::AddNotification(int id, const char* text, const char* btnText, std::function<void(int, IPlugin1*)> fn, IPlugin1* plugin)
 	{
-		m_notifs.Add(id, text, btnText, fn, plugin);
+		m_notifs.Add(id, text, btnText, std::move(fn), plugin);
 	}
 
 	void GUIManager::StopDebugging()
@@ -532,7 +530,7 @@ namespace ed {
 		if (view == ViewID::FrameAnalysis)
 			return m_frameAnalysis;
 
-		return m_views[(int)view];
+		return m_views[static_cast<int>(view)];
 	}
 	void GUIManager::ResetWorkspace()
 	{
