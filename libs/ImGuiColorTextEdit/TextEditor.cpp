@@ -5211,7 +5211,7 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 	int colIndex = GetCharacterIndex(aFrom);
 	for (size_t it = 0u; it < line.size() && it < colIndex;) {
 		if (line[it].mChar == '\t') {
-			distance = (1.0f + std::floor((1.0f + distance) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+			distance = (1.0f + std::floor((1.0f + distance) / (static_cast<float>(mTabSize) * spaceSize))) * (static_cast<float>(mTabSize) * spaceSize);
 			++it;
 		} else {
 			auto d = UTF8CharLength(line[it].mChar);
@@ -5375,7 +5375,6 @@ static bool TokenizeCStyleCharacterLiteral(const char* in_begin, const char* in_
 			return true;
 		}
 	}
-
 	return false;
 }
 
@@ -5521,6 +5520,7 @@ static bool TokenizeCStylePunctuation(const char* in_begin, const char* in_end, 
 		out_begin = in_begin;
 		out_end = in_begin + 1;
 		return true;
+	default:;
 	}
 
 	return false;
