@@ -1092,18 +1092,22 @@ namespace ed {
 		// Calculate the mean FPS
 		float meanFPS = 0.0f;
 		if (!fpsSamples.empty()) {
-			meanFPS = std::accumulate(fpsSamples.begin(), fpsSamples.end(), 0.0f) / fpsSamples.size();
+			meanFPS = std::accumulate(fpsSamples.begin(), fpsSamples.end(), 0.0f) / static_cast<float>(fpsSamples.size());
 		}
 
 		// Display the FPS and mean FPS in your GUI
 		ImGui::Separator();
-		// only show if mean is available instead of 'inf'
+		ImGui::Text("FPS:");
+		ImGui::SameLine();
+		ImGui::Text("%7.2f", FPS);
+
 		if (std::isfinite(meanFPS) && meanFPS >= 1.0f) {
-			ImGui::Text("FPS: %7.2f (FP10S: %7.0f)", FPS, meanFPS);
-		} else {
-			ImGui::Text("FPS: %7.2f", FPS);
+			ImGui::SameLine(150);  // Adjust `150` to position "FP10s" label consistently
+			ImGui::Text("FP10s:");
+			ImGui::SameLine();
+			ImGui::Text("%7.0f", meanFPS);
 		}
-		// ImGui::Text("Mean FPS (10 sec): %.2f", meanFPS);
+
 	}
 	void PreviewUI::m_renderStatusbar(float width, float height)
 	{
