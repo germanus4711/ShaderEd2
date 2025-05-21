@@ -68,8 +68,6 @@ namespace ed {
 		SDL_SetWindowTitle(m_wnd, ("SHADERed (" + projName + ")").c_str());
 	}
 
-
-
 	void GUIManager::SavePreviewToFile()
 	{
 		int sizeMulti = 1;
@@ -330,7 +328,7 @@ namespace ed {
 				Logger::Get().Log("Default template set to " + m_selectedTemplate);
 			} else {
 				m_selectedTemplate = "?empty";
-				Logger::Get().Log("No templates found", true);
+				Logger::Get().Log("No templates available. Setting to default empty project.", false);
 			}
 		}
 
