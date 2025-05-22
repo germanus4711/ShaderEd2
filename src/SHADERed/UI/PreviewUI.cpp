@@ -1076,10 +1076,10 @@ namespace ed {
 		if (Settings::Instance().Preview.PropertyPick && !m_picks.empty())
 			dynamic_cast<PropertyUI*>(m_ui->Get(ViewID::Properties))->Open(m_picks[m_picks.size() - 1]);
 	}
-	void PreviewUI::UpdateAndDisplayFPS(float deltaTime)
+	auto PreviewUI::UpdateAndDisplayFPS(const float deltaTime) -> void
 	{
 		// Calculate the current FPS
-		float FPS = 1.0f / deltaTime;
+		const float FPS = 1.0f / deltaTime;
 
 		// Add the current FPS to the buffer
 		fpsSamples.push_back(FPS);

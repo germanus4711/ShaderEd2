@@ -76,7 +76,7 @@ namespace ed {
 		void Update(float delta) override;
 
 		void Duplicate();
-		void UpdateAndDisplayFPS(float deltaTime);
+		static void UpdateAndDisplayFPS(float deltaTime);
 		void Pick(PipelineItem* item, bool add = false);
 		bool IsPicked(PipelineItem* item) { return std::count(m_picks.begin(), m_picks.end(), item) > 0; }
 
