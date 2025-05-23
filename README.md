@@ -1,5 +1,10 @@
 # SHADERed
 
+Warning: This is a Mac OS 15.5+ port, incl. C++ 20 upgrade
+
+NOTE: There will be no testing on Windows or Linux!
+---------------------------------------------------
+
 SHADERed is a lightweight tool for writing and debugging shaders. It is easy to use,
 open source, cross-platform (runs on Windows, Linux & [Web](https://shadered.org/template)).
 
